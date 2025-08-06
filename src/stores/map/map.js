@@ -120,7 +120,7 @@ export const useMapStore = defineStore('map', () => {
     if (filters.searchQuery.trim()) {
       filtered = filtered.filter(property =>
         property.address.includes(filters.searchQuery) ||
-        property.building_name.includes(filters.searchQuery)
+        property.buildingName.includes(filters.searchQuery)
       )
     }
 
@@ -135,19 +135,19 @@ export const useMapStore = defineStore('map', () => {
       filtered = filtered.filter(property => {
         // 임시로 건물명에 따라 유형 판단
         if (selectedPropertyTypes.includes('apartment') &&
-            (property.building_name.includes('아파트') || property.building_name.includes('APT'))) {
+            (property.buildingName.includes('아파트') || property.buildingName.includes('APT'))) {
           return true
         }
         if (selectedPropertyTypes.includes('officetel') &&
-            property.building_name.includes('오피스텔')) {
+            property.buildingName.includes('오피스텔')) {
           return true
         }
         if (selectedPropertyTypes.includes('house') &&
-            property.building_name.includes('주택')) {
+            property.buildingName.includes('주택')) {
           return true
         }
         if (selectedPropertyTypes.includes('villa') &&
-            property.building_name.includes('빌라')) {
+            property.buildingName.includes('빌라')) {
           return true
         }
         return selectedPropertyTypes.length === 0

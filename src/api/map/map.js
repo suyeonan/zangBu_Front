@@ -87,7 +87,7 @@ export const getSingleMapLocation = async (address, buildingName) => {
     const response = await api.post('/map/list', [
       {
         address,
-        building_name: buildingName
+        buildingName: buildingName
       }
     ])
     return response.data[0]

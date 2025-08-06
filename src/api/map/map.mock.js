@@ -4,7 +4,7 @@ export const mockMapAPI = {
   getMockResponse: (properties) => {
     return properties.map(property => ({
       address: property.address,
-      building_name: property.building_name,
+      buildingName: property.buildingName,
       // 고정된 좌표값들 (테스트용)
       lat: getFixedLatitude(property.address),
       lng: getFixedLongitude(property.address)
@@ -102,7 +102,7 @@ function generateMockProperties() {
 
   return addresses.map((address, index) => ({
     address,
-    building_name: buildingNames[index],
+    buildingName: buildingNames[index],
     lat: getFixedLatitude(address),
     lng: getFixedLongitude(address),
     ...propertyData[index]
@@ -165,7 +165,7 @@ export const getSingleMapLocationMock = async (address, buildingName) => {
   await mockMapAPI.delay(500) // 0.5초 지연
 
   const response = mockMapAPI.getMockResponse([
-    { address, building_name: buildingName }
+    { address, buildingName: buildingName }
   ])
 
   return response[0]
