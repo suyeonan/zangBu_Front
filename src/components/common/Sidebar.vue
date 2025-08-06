@@ -107,7 +107,6 @@ const typeAMenuItems = computed(() => {
     { id: 'map', label: '지도', action: 'navigate' },
     { id: 'chat', label: '채팅', action: 'navigate' },
     { id: 'trade', label: '거래', action: 'navigate' },
-    { id: 'notification', label: '알림', action: 'navigate' },
     { id: 'mypage', label: '마이페이지', action: 'navigate' },
   ]
 })

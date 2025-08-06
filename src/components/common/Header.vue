@@ -108,7 +108,7 @@
             <button class="relative" @click="handleNavigation('notification')">
               <!-- 종 아이콘 -->
               <svg
-                class="w-6 h-6 md:w-7 md:h-7 text-green-900 hover:text-brand-1 transition-colors"
+                class="w-6 h-6 sm:w-7 sm:h-7 text-green-900 hover:text-brand-1 transition-colors"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="1.5"
@@ -303,7 +303,6 @@ const isSidebarOpen = ref(false)
 const sidebarMenuItems = [
   { id: 'map', label: '지도', action: 'navigate' },
   { id: 'chat', label: '채팅', action: 'navigate' },
-  { id: 'notification', label: '알림', action: 'navigate' },
   { id: 'trade', label: '거래', action: 'navigate' },
   { id: 'mypage', label: '마이페이지', action: 'navigate' },
 ]
