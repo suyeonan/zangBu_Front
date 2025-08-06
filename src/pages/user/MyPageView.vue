@@ -27,12 +27,29 @@ const myProperties = [
   { id: 4, title: '내 매물 B', imageUrl: '', price: '1.5억', location: '대구', type: '매매' },
   { id: 5, title: '내 매물 B', imageUrl: '', price: '1.5억', location: '대구', type: '매매' },
 ]
+
+// async function handleDelete(buildingId) {
+//   try {
+//     await axios.delete(`/building/bookmark/${buildingId}`, {
+//       headers: { Authorization: `Bearer ${token}` },
+//     })
+
+//     // 리스트에서 제거
+//     favoriteProperties.value = favoriteProperties.value.filter(
+//       (property) => property.id !== buildingId
+//     )
+//   } catch (err) {
+//     console.error('찜 해제 실패:', err)
+//   }
+// }
 </script>
 
 <template>
   <section class="px-6 py-10 bg-gray-50 min-h-screen">
     <!-- 제목 -->
-    <h1 class="text-2xl font-bold text-center mb-4">🏡 마이페이지</h1>
+    <h1 class="text-2xl font-bold text-center mb-4">
+      <i class="fa-solid fa-user" style="color: var(--brand-3)"></i> 마이페이지
+    </h1>
     <p class="text-xs text-center mb-8">계정을 관리하고 저장된 매물을 확인하세요.</p>
 
     <!-- 사용자 카드 -->
@@ -61,9 +78,15 @@ const myProperties = [
     </div>
 
     <div class="action-buttons mt-6 p-6">
-      <router-link to="/user/profile-edit" class="primary-button">개인 정보 수정</router-link>
-      <router-link to="/auth/login" class="primary-button">로그아웃</router-link>
-      <router-link to="/user/withdraw" class="secondary-button">계정 삭제</router-link>
+      <router-link to="/user/profile-edit" class="primary-button"
+        ><i class="fa-regular fa-pen-to-square mr-2"></i>개인 정보 수정</router-link
+      >
+      <router-link to="/auth/login" class="primary-button"
+        ><i class="fa-solid fa-right-from-bracket mr-2"></i>로그아웃</router-link
+      >
+      <router-link to="/user/withdraw" class="secondary-button"
+        ><i class="fa-solid fa-trash-can mr-2"></i>계정 삭제</router-link
+      >
     </div>
 
     <!-- 찜한/등록한 매물 섹션 -->
@@ -75,22 +98,28 @@ const myProperties = [
           :class="{ active: selectedTab === 'favorite' }"
           @click="selectedTab = 'favorite'"
         >
-          💚 내가 찜한 매물
+          <i class="fa-regular fa-heart mr-2"></i> 내가 찜한 매물
         </button>
         <button
           class="tab-button"
           :class="{ active: selectedTab === 'my' }"
           @click="selectedTab = 'my'"
         >
-          🏠 내가 등록한 매물
+          <i class="fa-solid fa-house mr-2"></i> 내가 등록한 매물
         </button>
       </div>
 
       <!-- 제목과 구분선 -->
       <div class="text-left mb-6">
-        <h2 class="text-xl font-semibold">
-          {{ selectedTab === 'favorite' ? '💚 내가 찜한 매물' : '🏠 내가 등록한 매물' }}
-        </h2>
+        <div class="flex items-center gap-2">
+          <i
+            :class="selectedTab === 'favorite' ? 'fa-regular fa-heart' : 'fa-solid fa-house'"
+            style="color: var(--brand-3)"
+          ></i>
+          <h2 class="text-xl font-semibold">
+            {{ selectedTab === 'favorite' ? '내가 찜한 매물' : '내가 등록한 매물' }}
+          </h2>
+        </div>
         <hr class="mt-2" />
       </div>
 

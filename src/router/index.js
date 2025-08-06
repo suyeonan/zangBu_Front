@@ -97,6 +97,7 @@ const router = createRouter({
       path: '/auth/login',
       name: 'login',
       component: LoginView,
+      meta: { hideHeaderFooter: true },
     },
     {
       path: '/auth/verify',
@@ -112,15 +113,17 @@ const router = createRouter({
       path: '/auth/signup',
       name: 'signup',
       component: SignupView,
-      //서버 연결
-      // beforeEnter: (to, from, next) => {
-      //   const verified = sessionStorage.getItem('verified') === 'true'
-      //   if (verified) {
-      //     next()
-      //   } else {
-      //     next('/auth/verify')
-      //   }
-      // }
+      beforeEnter: (to, from, next) => {
+        if (to.path === '/auth/signup') {
+          const verified = sessionStorage.getItem('verified') === 'true'
+          if (!verified) {
+            // 인증 안 했으면 verify 페이지로 리다이렉트
+            return next('/auth/verify')
+          }
+        }
+        sessionStorage.removeItem('verified')
+        next()
+      }
     },
     {
       path: '/auth/find-id',

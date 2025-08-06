@@ -8,6 +8,7 @@ const router = useRouter()
 const email = ref('')
 const password = ref('')
 const errorMessage = ref('')
+const showPassword = ref(false)
 
 // 더미 유저 데이터
 const dummyUsers = [
@@ -18,11 +19,13 @@ const dummyUsers = [
 
 // 로그인 처리
 function login() {
-  const user = dummyUsers.find((u) => u.email === email.value && u.password === password.value)
+  const user = dummyUsers.find(
+    (u) => u.email === email.value.trim() && u.password === password.value
+  )
 
   if (user) {
     errorMessage.value = ''
-    router.push('/')
+    router.push({ name: 'main' })
   } else {
     errorMessage.value = '이메일 또는 비밀번호가 올바르지 않습니다.'
   }
@@ -59,18 +62,22 @@ function login() {
               v-model="email"
             />
           </div>
-          <!-- 비밀번호 입력 -->
+          <!-- 비밀번호 -->
           <div class="input-group">
             <label class="input-label">비밀번호</label>
             <div class="relative">
               <input
-                type="password"
-                placeholder="비밀번호를 입력하세요"
-                class="input-field"
                 v-model="password"
+                :type="showPassword ? 'text' : 'password'"
+                placeholder="비밀번호를 입력하세요 (최소 8자)"
+                class="input-field pr-10"
+                @keyup.enter="login"
               />
-              <span class="absolute inset-y-0 right-3 flex items-center text-gray-400">
-                <i class="lucide-eye w-5 h-5"></i>
+              <span
+                class="absolute inset-y-0 right-3 flex items-center cursor-pointer text-gray-400"
+                @click="showPassword = !showPassword"
+              >
+                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
               </span>
             </div>
           </div>

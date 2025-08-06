@@ -417,14 +417,24 @@ export const getReviewDetail = async (reviewId) => {
   return { data: reviewDetail }
 }
 
-// 리뷰 목록 조회 (기존)
-export const getReviews = (params) => {
-  return api.get('/reviews', { params })
-}
-
-// 리뷰 작성
-export const createReview = (reviewData) => {
-  return api.post('/reviews', reviewData)
+/**
+ * 리뷰 작성 API
+ * @param {Object} reviewData - 리뷰 데이터
+ * @param {number} reviewData.buildingId - 건물 ID
+ * @param {number} reviewData.addressId - 주소 ID
+ * @param {string} reviewData.floor - 층수 정보 ("저층" | "중층" | "고층")
+ * @param {number} reviewData.rank - 별점 (1~5)
+ * @param {string} reviewData.content - 리뷰 본문
+ * @returns {Promise} 생성된 리뷰 정보
+ */
+export const createReview = async (reviewData) => {
+  try {
+    const response = await api.post('/review', reviewData)
+    return response.data
+  } catch (error) {
+    console.error('리뷰 작성 실패:', error)
+    throw error
+  }
 }
 
 // 리뷰 수정

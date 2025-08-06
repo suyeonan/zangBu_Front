@@ -24,6 +24,7 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { useMapStore } from '@/stores/map/map.js'
 import { useRouter, useRoute } from 'vue-router'
 import { getPropertyDetailById } from '@/api/property/property.js'
+import ReviewWriteModal from '@/components/review/ReviewWriteModal.vue'
 
 // Props 정의
 const props = defineProps({
@@ -41,6 +42,9 @@ const route = useRoute()
 // 상세 보기 상태
 const showDetail = ref(false)
 const selectedProperty = ref(null)
+
+// 리뷰 작성 모달 상태
+const showReviewModal = ref(false)
 
 // 지도 관련
 const mapContainer = ref(null)
@@ -553,6 +557,23 @@ const goToReviewList = () => {
   }
 }
 
+// 리뷰 작성 모달 열기
+const openReviewModal = () => {
+  showReviewModal.value = true
+}
+
+// 리뷰 작성 모달 닫기
+const closeReviewModal = () => {
+  showReviewModal.value = false
+}
+
+// 리뷰 작성 완료 처리
+const handleReviewCreated = (reviewData) => {
+  console.log('리뷰 작성 완료:', reviewData)
+  // 여기서 필요한 후처리 작업을 수행할 수 있습니다
+  // 예: 리뷰 목록 새로고침, 성공 메시지 표시 등
+}
+
 // 필터 변경 감지
 watch(
   () => mapStore.filteredProperties,
@@ -962,7 +983,13 @@ onMounted(() => {
                 <span class="star-icon">☆</span>
                 거주자 리뷰
               </h3>
-              <button class="more-btn" @click="goToReviewList">→</button>
+              <div class="review-actions">
+                <button class="write-review-btn" @click="openReviewModal">
+                  <span class="btn-icon">✏️</span>
+                  리뷰 작성
+                </button>
+                <button class="more-btn" @click="goToReviewList">→</button>
+              </div>
             </div>
             <div class="review-list">
               <div
@@ -1042,6 +1069,17 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- 리뷰 작성 모달 -->
+    <ReviewWriteModal
+      v-if="showReviewModal"
+      :building-id="
+        selectedProperty?.buildingId || getBuildingIdByName(selectedProperty?.buildingName)
+      "
+      :building-name="selectedProperty?.buildingName || ''"
+      @close="closeReviewModal"
+      @review-created="handleReviewCreated"
+    />
   </div>
 </template>
 
@@ -1708,6 +1746,34 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.review-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.write-review-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.write-review-btn:hover {
+  background: #45a049;
+}
+
+.write-review-btn .btn-icon {
+  font-size: 14px;
 }
 
 .star-icon {

@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
 
 // 약관 체크 상태
 const allChecked = ref(false)
@@ -60,28 +62,38 @@ function checkIfAllAgreed() {
             <input type="nickname" placeholder="닉네임을 입력하세요" class="input-field" />
           </div>
 
-          <!-- 비밀번호 입력 -->
+          <!-- 비밀번호 -->
           <div class="input-group">
             <label class="input-label">비밀번호 <span class="text-red-500">*</span></label>
             <div class="relative">
               <input
-                type="password"
+                :type="showPassword ? 'text' : 'password'"
                 placeholder="비밀번호를 입력하세요 (최소 8자)"
-                class="input-field"
+                class="input-field pr-10"
               />
-              <span class="absolute inset-y-0 right-3 flex items-center text-gray-400">
-                <i class="lucide-eye w-5 h-5"></i>
+              <span
+                class="absolute inset-y-0 right-3 flex items-center cursor-pointer text-gray-400"
+                @click="showPassword = !showPassword"
+              >
+                <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
               </span>
             </div>
           </div>
 
-          <!-- 비밀번호 재입력 -->
+          <!-- 비밀번호 확인 -->
           <div class="input-group">
             <label class="input-label">비밀번호 확인 <span class="text-red-500">*</span></label>
             <div class="relative">
-              <input type="password" placeholder="비밀번호를 다시 입력하세요" class="input-field" />
-              <span class="absolute inset-y-0 right-3 flex items-center text-gray-400">
-                <i class="lucide-eye w-5 h-5"></i>
+              <input
+                :type="showConfirmPassword ? 'text' : 'password'"
+                placeholder="비밀번호를 다시 입력하세요"
+                class="input-field pr-10"
+              />
+              <span
+                class="absolute inset-y-0 right-3 flex items-center cursor-pointer text-gray-400"
+                @click="showConfirmPassword = !showConfirmPassword"
+              >
+                <i :class="showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
               </span>
             </div>
           </div>

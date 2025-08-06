@@ -4,7 +4,7 @@
     <header class="header">
       <div class="header-content">
         <button @click="goBack" class="back-button">
-          <i data-lucide="arrow-left" class="icon"></i>
+          <i class="fas fa-arrow-left icon"></i>
         </button>
         <h1 class="header-title">계정 삭제</h1>
         <div class="icon-placeholder"></div>
@@ -16,7 +16,7 @@
       <div class="content-box">
         <!-- 경고 아이콘 -->
         <div class="icon-wrapper">
-          <i data-lucide="alert-triangle" class="icon-alert"></i>
+          <i class="fas fa-exclamation-triangle icon-alert"></i>
         </div>
 
         <!-- 타이틀 -->
@@ -27,9 +27,11 @@
 
         <!-- 정보 박스 -->
         <div class="info-box">
-          <i data-lucide="info" class="icon-info"></i>
           <div>
-            <p class="info-title">데이터 보관 정책</p>
+            <p class="info-title">
+              <i class="fas fa-info-circle icon-info"></i>
+              데이터 보관 정책
+            </p>
             <p>개인정보는 완전 삭제 전까지 1년간 보관됩니다.</p>
           </div>
         </div>
@@ -171,8 +173,7 @@ onMounted(() => {
 
 .icon-alert {
   color: #dc2626;
-  width: 2rem;
-  height: 2rem;
+  font-size: 2rem;
 }
 
 .text-center {
@@ -206,11 +207,8 @@ onMounted(() => {
 }
 
 .icon-info {
-  margin-top: 2px;
   color: #ca8a04;
-  flex-shrink: 0;
-  width: 1.25rem;
-  height: 1.25rem;
+  font-size: 1rem;
 }
 
 .info-title {

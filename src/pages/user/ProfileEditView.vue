@@ -9,7 +9,9 @@
 
     <!-- 제목 -->
     <div class="text-center mb-10">
-      <h1 class="text-2xl font-bold">🔒 개인정보 수정</h1>
+      <h1 class="text-2xl font-bold">
+        <i class="fa-solid fa-user-lock" style="color: var(--brand-3)"></i> 개인정보 수정
+      </h1>
       <p class="text-sm text-gray-500">계정 정보와 설정을 업데이트해주세요.</p>
     </div>
 
@@ -29,7 +31,9 @@
 
     <!-- 비밀번호 변경 섹션 -->
     <div class="bg-white shadow rounded-xl p-6 max-w-4xl mx-auto mb-6">
-      <h2 class="font-semibold text-lg mb-1">🔐 비밀번호 변경</h2>
+      <h2 class="font-semibold text-lg mb-1">
+        <i class="fa-solid fa-lock" style="color: var(--brand-3)"></i> 비밀번호 변경
+      </h2>
       <p class="text-xs mb-4 text-gray-600">보안 강화를 위해 비밀번호를 업데이트하세요.</p>
       <hr />
       <div class="space-y-4 mt-4">
@@ -78,7 +82,9 @@
 
     <!-- 닉네임 변경 섹션 -->
     <div class="bg-white shadow rounded-xl p-6 max-w-4xl mx-auto mb-6">
-      <h2 class="font-semibold text-lg mb-1">👤 닉네임 변경</h2>
+      <h2 class="font-semibold text-lg mb-1">
+        <i class="fa-regular fa-user" style="color: var(--brand-3)"></i> 닉네임 변경
+      </h2>
       <p class="text-xs mb-4 text-gray-600">나를 나타내는 고유한 닉네임을 선택하세요.</p>
       <hr />
       <div class="space-y-4 mt-4">
@@ -104,7 +110,9 @@
 
     <!-- 알림 설정 섹션 -->
     <div class="bg-white shadow rounded-xl p-6 max-w-4xl mx-auto mb-20">
-      <h2 class="font-semibold text-lg mb-4">🟢 알림 수신 설정</h2>
+      <h2 class="font-semibold text-lg mb-4">
+        <i class="fa-solid fa-bell" style="color: var(--brand-3)"></i> 알림 수신 설정
+      </h2>
       <hr class="mb-4" />
       <h2 class="font-semibold text-lg mb-4">서비스/마케팅 알림</h2>
 
