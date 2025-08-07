@@ -20,6 +20,16 @@ export const cancelBookmarkProperty = (buildingId) => {
   return api.delete(`/building/bookmark/${buildingId}`)
 }
 
+// 매물 알림 설정
+export const setPropertyNotification = (data) => {
+  return api.post('/building/notification', data)
+}
+
+// 매물 알림 해제
+export const cancelPropertyNotification = (buildingId) => {
+  return api.delete(`/building/notification/${buildingId}`)
+}
+
 // 매물 등록
 export const registerProperty = (data) => {
   // FormData인 경우 Content-Type을 설정하지 않음 (브라우저가 자동으로 설정)

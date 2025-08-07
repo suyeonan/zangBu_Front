@@ -348,4 +348,25 @@ const router = createRouter({
   ],
 })
 
+// 라우터 가드 - 로그인 검증
+router.beforeEach((to, from, next) => {
+  // 리뷰 관련 페이지에 대한 로그인 검증
+  if (to.path.startsWith('/review/')) {
+    // localStorage에서 로그인 상태 확인 (auth.js 수정 없이)
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
+
+    if (!isLoggedIn) {
+      // 로그인되지 않은 경우 로그인 페이지로 리다이렉트 (원래 가려던 페이지 정보 포함)
+      next({
+        path: '/auth/login',
+        query: { redirect: to.fullPath }
+      })
+      return
+    }
+  }
+
+  // 그 외 페이지는 정상적으로 진행
+  next()
+})
+
 export default router

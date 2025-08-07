@@ -1,8 +1,9 @@
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 
 // 상태 관리
 const email = ref('')
@@ -25,7 +26,14 @@ function login() {
 
   if (user) {
     errorMessage.value = ''
-    router.push({ name: 'main' })
+
+    // localStorage에 로그인 상태 저장 (auth.js 수정 없이)
+    localStorage.setItem('isLoggedIn', 'true')
+    localStorage.setItem('userEmail', user.email)
+
+    // 로그인 성공 후 원래 가려던 페이지로 리다이렉트
+    const redirectPath = route.query.redirect || '/'
+    router.push(redirectPath)
   } else {
     errorMessage.value = '이메일 또는 비밀번호가 올바르지 않습니다.'
   }

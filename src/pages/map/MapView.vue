@@ -23,8 +23,13 @@ selectedProperty.value가 존재할 때만 리뷰 페이지로 이동
 import { ref, onMounted, watch, computed } from 'vue'
 import { useMapStore } from '@/stores/map/map.js'
 import { useRouter, useRoute } from 'vue-router'
-import { getPropertyDetailById } from '@/api/property/property.js'
-import ReviewWriteModal from '@/components/review/ReviewWriteModal.vue'
+import {
+  getPropertyDetailById,
+  bookmarkProperty,
+  cancelBookmarkProperty,
+  setPropertyNotification,
+  cancelPropertyNotification,
+} from '@/api/property/property.js'
 
 // Props 정의
 const props = defineProps({
@@ -42,9 +47,6 @@ const route = useRoute()
 // 상세 보기 상태
 const showDetail = ref(false)
 const selectedProperty = ref(null)
-
-// 리뷰 작성 모달 상태
-const showReviewModal = ref(false)
 
 // 지도 관련
 const mapContainer = ref(null)
@@ -241,6 +243,8 @@ const sampleProperties = [
     propertyType: '아파트',
     price: 1500000000,
     deposit: 0,
+    isBookmarked: false,
+    isNotification: false,
   },
   {
     address: '서울특별시 마포구 양화로 45',
@@ -250,6 +254,8 @@ const sampleProperties = [
     propertyType: '오피스텔',
     price: 800000000,
     deposit: 0,
+    isBookmarked: false,
+    isNotification: false,
   },
   {
     address: '서울특별시 종로구 종로 1',
@@ -259,6 +265,8 @@ const sampleProperties = [
     propertyType: '아파트',
     price: 1200000000,
     deposit: 0,
+    isBookmarked: true,
+    isNotification: true,
   },
 
   // 전세 매물들
@@ -270,6 +278,8 @@ const sampleProperties = [
     propertyType: '아파트',
     price: 0,
     deposit: 500000000,
+    isBookmarked: false,
+    isNotification: false,
   },
   {
     address: '서울특별시 광진구 구의동',
@@ -279,6 +289,8 @@ const sampleProperties = [
     propertyType: '아파트',
     price: 0,
     deposit: 300000000,
+    isBookmarked: false,
+    isNotification: false,
   },
   {
     address: '서울특별시 강남구 역삼동',
@@ -288,6 +300,8 @@ const sampleProperties = [
     propertyType: '아파트',
     price: 0,
     deposit: 400000000,
+    isBookmarked: false,
+    isNotification: false,
   },
 
   // 월세 매물들
@@ -299,6 +313,8 @@ const sampleProperties = [
     propertyType: '빌라',
     price: 50000000,
     deposit: 10000000,
+    isBookmarked: false,
+    isNotification: false,
   },
   {
     address: '서울특별시 마포구 합정동',
@@ -308,6 +324,8 @@ const sampleProperties = [
     propertyType: '오피스텔',
     price: 80000000,
     deposit: 5000000,
+    isBookmarked: false,
+    isNotification: false,
   },
   {
     address: '서울특별시 강남구 청담동',
@@ -317,6 +335,8 @@ const sampleProperties = [
     propertyType: '주택',
     price: 120000000,
     deposit: 20000000,
+    isBookmarked: false,
+    isNotification: false,
   },
 
   // 추가 매물들 (다양한 조합)
@@ -328,6 +348,8 @@ const sampleProperties = [
     propertyType: '아파트',
     price: 2000000000,
     deposit: 0,
+    isBookmarked: false,
+    isNotification: false,
   },
   {
     address: '서울특별시 성동구 성수동',
@@ -337,6 +359,8 @@ const sampleProperties = [
     propertyType: '오피스텔',
     price: 0,
     deposit: 200000000,
+    isBookmarked: false,
+    isNotification: false,
   },
   {
     address: '서울특별시 용산구 이태원동',
@@ -346,6 +370,8 @@ const sampleProperties = [
     propertyType: '빌라',
     price: 30000000,
     deposit: 15000000,
+    isBookmarked: false,
+    isNotification: false,
   },
 ]
 
@@ -487,7 +513,7 @@ const resetFilters = async () => {
 
 // 집 내놓기 페이지로 이동
 const goToUpload = () => {
-  router.push('/building/upload')
+  router.push('/property/register')
 }
 
 // 매물 상세 정보 가져오기
@@ -497,7 +523,13 @@ const fetchPropertyDetail = async (buildingId) => {
     const response = await getPropertyDetailById(buildingId)
     console.log('API 응답:', response)
     if (response && response.data) {
-      selectedProperty.value = response.data
+      // API 응답에 isBookmarked와 isNotification이 없을 경우 기본값 설정
+      const propertyData = {
+        ...response.data,
+        isBookmarked: response.data.isBookmarked ?? false,
+        isNotification: response.data.isNotification ?? false,
+      }
+      selectedProperty.value = propertyData
       showDetail.value = true
     } else {
       console.warn('매물 데이터가 없습니다.')
@@ -511,7 +543,13 @@ const fetchPropertyDetail = async (buildingId) => {
 // 매물 상세 보기 표시
 const showPropertyDetail = (property) => {
   try {
-    selectedProperty.value = property
+    // isBookmarked와 isNotification 속성이 없을 경우 기본값 설정
+    const propertyData = {
+      ...property,
+      isBookmarked: property.isBookmarked ?? false,
+      isNotification: property.isNotification ?? false,
+    }
+    selectedProperty.value = propertyData
     showDetail.value = true
     // URL 업데이트 - buildingId 사용
     const buildingId = property.buildingId || getBuildingIdByName(property.buildingName)
@@ -537,6 +575,50 @@ const closePropertyDetail = () => {
   }
 }
 
+// 찜하기 토글
+const toggleBookmark = async () => {
+  if (!selectedProperty.value) return
+
+  try {
+    const buildingId =
+      selectedProperty.value.buildingId || getBuildingIdByName(selectedProperty.value.buildingName)
+
+    if (selectedProperty.value.isBookmarked) {
+      // 찜하기 취소
+      await cancelBookmarkProperty(buildingId)
+      selectedProperty.value.isBookmarked = false
+    } else {
+      // 찜하기 추가
+      await bookmarkProperty({ buildingId })
+      selectedProperty.value.isBookmarked = true
+    }
+  } catch (error) {
+    console.error('찜하기 토글 실패:', error)
+  }
+}
+
+// 알림 토글
+const toggleNotification = async () => {
+  if (!selectedProperty.value) return
+
+  try {
+    const buildingId =
+      selectedProperty.value.buildingId || getBuildingIdByName(selectedProperty.value.buildingName)
+
+    if (selectedProperty.value.isNotification) {
+      // 알림 해제
+      await cancelPropertyNotification(buildingId)
+      selectedProperty.value.isNotification = false
+    } else {
+      // 알림 설정
+      await setPropertyNotification({ buildingId })
+      selectedProperty.value.isNotification = true
+    }
+  } catch (error) {
+    console.error('알림 토글 실패:', error)
+  }
+}
+
 // 채팅 페이지로 이동
 const goToChat = () => {
   router.push('/chat/list')
@@ -557,21 +639,19 @@ const goToReviewList = () => {
   }
 }
 
-// 리뷰 작성 모달 열기
-const openReviewModal = () => {
-  showReviewModal.value = true
-}
-
-// 리뷰 작성 모달 닫기
-const closeReviewModal = () => {
-  showReviewModal.value = false
-}
-
-// 리뷰 작성 완료 처리
-const handleReviewCreated = (reviewData) => {
-  console.log('리뷰 작성 완료:', reviewData)
-  // 여기서 필요한 후처리 작업을 수행할 수 있습니다
-  // 예: 리뷰 목록 새로고침, 성공 메시지 표시 등
+// 리뷰 작성 페이지로 이동
+const goToReviewWrite = () => {
+  if (selectedProperty.value) {
+    const buildingId = getBuildingIdByName(selectedProperty.value.buildingName)
+    if (buildingId) {
+      router.push(`/review/write/${buildingId}`)
+    } else {
+      console.warn(
+        '매물에 대한 buildingId를 찾을 수 없습니다:',
+        selectedProperty.value.buildingName
+      )
+    }
+  }
 }
 
 // 필터 변경 감지
@@ -782,6 +862,7 @@ onMounted(() => {
               class="action-btn"
               :title="selectedProperty.isBookmarked ? '찜하기 취소' : '찜하기'"
               :class="{ bookmarked: selectedProperty.isBookmarked }"
+              @click="toggleBookmark"
             >
               <i :class="selectedProperty.isBookmarked ? 'fas fa-heart' : 'far fa-heart'"></i>
             </button>
@@ -789,6 +870,7 @@ onMounted(() => {
               class="action-btn"
               :title="selectedProperty.isNotification ? '알림 해제' : '알림 설정'"
               :class="{ notified: selectedProperty.isNotification }"
+              @click="toggleNotification"
             >
               <i :class="selectedProperty.isNotification ? 'fas fa-bell' : 'far fa-bell'"></i>
             </button>
@@ -984,7 +1066,7 @@ onMounted(() => {
                 거주자 리뷰
               </h3>
               <div class="review-actions">
-                <button class="write-review-btn" @click="openReviewModal">
+                <button class="write-review-btn" @click="goToReviewWrite">
                   <span class="btn-icon">✏️</span>
                   리뷰 작성
                 </button>
@@ -1069,17 +1151,6 @@ onMounted(() => {
         </div>
       </div>
     </div>
-
-    <!-- 리뷰 작성 모달 -->
-    <ReviewWriteModal
-      v-if="showReviewModal"
-      :building-id="
-        selectedProperty?.buildingId || getBuildingIdByName(selectedProperty?.buildingName)
-      "
-      :building-name="selectedProperty?.buildingName || ''"
-      @close="closeReviewModal"
-      @review-created="handleReviewCreated"
-    />
   </div>
 </template>
 
