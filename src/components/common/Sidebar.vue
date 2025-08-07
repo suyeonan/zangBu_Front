@@ -1,9 +1,9 @@
 <template>
   <aside
     :class="[
-      'fixed top-0 left-0 h-full bg-white shadow-lg transition-all duration-300 z-50',
+      'fixed top-0 right-0 h-full bg-white shadow-lg transition-all duration-300 z-50',
       'w-80 h-screen',
-      isOpen ? 'translate-x-0' : '-translate-x-full',
+      isOpen ? 'translate-x-0' : 'translate-x-full',
     ]"
   >
     <!-- 헤더 영역 -->

@@ -13,113 +13,95 @@ const loading = ref(false)
 const error = ref(null)
 const activeFilter = ref('buying') // 기본값을 '구매 중'으로 설정
 
-// Dummy data for testing
+// Dummy data for testing - 실제 API 구조에 맞춤 (카멜케이스)
 const dummyDeals = [
   {
-    id: 1,
-    status: 'buying',
-    user_role: 'buyer',
-    created_at: '2024-01-15',
-    property: {
-      id: 101,
-      building_name: '스카이빌',
-      address: '서울시 광진구 자양로21길 16-26',
-      price: 705000000,
-      sale_type: '매매',
-      property_type: '아파트',
-      image_url: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=300&fit=crop',
-    },
-    seller: { nickname: '김판매' },
-    buyer: { nickname: '김철수' },
+    buildingId: '1',
+    price: '750000000',
+    buildingName: '스카이빌',
+    houseType: '아파트',
+    saleType: '매매',
+    imageUrl: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=300&fit=crop',
+    address: '서울시 광진구 자양로 21길 16-26',
+    dealStatus: '구매중',
+    createdAt: '2024-01-15',
   },
   {
-    id: 2,
-    status: 'buying',
-    user_role: 'buyer',
-    created_at: '2024-01-14',
-    property: {
-      id: 102,
-      building_name: '래미안안암',
-      address: '서울시 성북구 고려대로17가길 64',
-      price: 770000000,
-      sale_type: '매매',
-      property_type: '아파트',
-      image_url: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop',
-    },
-    seller: { nickname: '이판매' },
-    buyer: { nickname: '김철수' },
+    buildingId: '2',
+    price: '520000000',
+    buildingName: '한강하이츠',
+    houseType: '오피스텔',
+    saleType: '전세',
+    imageUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=300&fit=crop',
+    address: '서울시 마포구 합정동 123-45',
+    dealStatus: '판매중',
+    createdAt: '2024-01-14',
   },
   {
-    id: 3,
-    status: 'buying',
-    user_role: 'buyer',
-    created_at: '2024-01-13',
-    property: {
-      id: 103,
-      building_name: '목동한국',
-      address: '서울시 양천구 중앙로 332',
-      price: 755000000,
-      sale_type: '매매',
-      property_type: '아파트',
-      image_url:
-        'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400&h=300&fit=crop',
-    },
-    seller: { nickname: '박판매' },
-    buyer: { nickname: '김철수' },
+    buildingId: '3',
+    price: '980000000',
+    buildingName: '롯데캐슬',
+    houseType: '아파트',
+    saleType: '매매',
+    imageUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=300&fit=crop',
+    address: '서울시 송파구 잠실로 222',
+    dealStatus: '판매중',
+    createdAt: '2024-01-13',
   },
   {
-    id: 4,
-    status: 'buying',
-    user_role: 'buyer',
-    created_at: '2024-01-12',
-    property: {
-      id: 104,
-      building_name: '잠실래미안아이파크',
-      address: '서울시 송파구 신천동',
-      price: 4550000000,
-      sale_type: '매매',
-      property_type: '아파트',
-      image_url:
-        'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop',
-    },
-    seller: { nickname: '최판매' },
-    buyer: { nickname: '김철수' },
+    buildingId: '4',
+    price: '130000000',
+    buildingName: '행복한빌라',
+    houseType: '빌라',
+    saleType: '월세',
+    imageUrl: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400&h=300&fit=crop',
+    address: '경기도 성남시 분당구 수내동 88-1',
+    dealStatus: '구매중',
+    createdAt: '2024-01-12',
   },
   {
-    id: 5,
-    status: 'selling',
-    user_role: 'seller',
-    created_at: '2024-01-11',
-    property: {
-      id: 105,
-      building_name: '강남아이파크',
-      address: '서울시 강남구 테헤란로 123',
-      price: 1200000000,
-      sale_type: '매매',
-      property_type: '아파트',
-      image_url:
-        'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=300&fit=crop',
-    },
-    seller: { nickname: '김철수' },
-    buyer: { nickname: '이구매' },
+    buildingId: '5',
+    price: '1200000000',
+    buildingName: '강남아이파크',
+    houseType: '아파트',
+    saleType: '매매',
+    imageUrl: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop',
+    address: '서울시 강남구 테헤란로 123',
+    dealStatus: '판매중',
+    createdAt: '2024-01-11',
   },
   {
-    id: 6,
-    status: 'selling',
-    user_role: 'seller',
-    created_at: '2024-01-10',
-    property: {
-      id: 106,
-      building_name: '마포래미안',
-      address: '서울시 마포구 월드컵로 123',
-      price: 850000000,
-      sale_type: '매매',
-      property_type: '아파트',
-      image_url:
-        'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=300&fit=crop',
-    },
-    seller: { nickname: '김철수' },
-    buyer: { nickname: '박구매' },
+    buildingId: '6',
+    price: '850000000',
+    buildingName: '마포래미안',
+    houseType: '아파트',
+    saleType: '매매',
+    imageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop',
+    address: '서울시 마포구 월드컵로 123',
+    dealStatus: '구매중',
+    createdAt: '2024-01-10',
+  },
+  {
+    buildingId: '7',
+    price: '650000000',
+    buildingName: '잠실엘스',
+    houseType: '아파트',
+    saleType: '전세',
+    imageUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=300&fit=crop',
+    address: '서울시 송파구 잠실동 123',
+    dealStatus: '판매중',
+    createdAt: '2024-01-09',
+  },
+  {
+    buildingId: '8',
+    price: '450000000',
+    buildingName: '목동한강',
+    houseType: '오피스텔',
+    saleType: '월세',
+    imageUrl: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&h=300&fit=crop',
+    address: '서울시 양천구 목동 456',
+    dealStatus: '구매중',
+    createdAt: '2024-01-08',
   },
 ]
 
@@ -137,7 +119,7 @@ const fetchDeals = async () => {
 
     // Uncomment below to use real API
     // const response = await getDeals()
-    // deals.value = response.data || []
+    // deals.value = response.data?.deals || []
   } catch (err) {
     console.error('Failed to fetch deals:', err)
     error.value = '거래 목록을 불러오는데 실패했습니다. 다시 시도해주세요.'
@@ -151,9 +133,9 @@ const filteredDeals = computed(() => {
   if (activeFilter.value === 'all') {
     return deals.value
   } else if (activeFilter.value === 'buying') {
-    return deals.value.filter((deal) => deal.user_role === 'buyer' || deal.type === 'buying')
+    return deals.value.filter((deal) => deal.dealStatus === '구매중')
   } else if (activeFilter.value === 'selling') {
-    return deals.value.filter((deal) => deal.user_role === 'seller' || deal.type === 'selling')
+    return deals.value.filter((deal) => deal.dealStatus === '판매중')
   }
   return deals.value
 })
@@ -166,25 +148,18 @@ const setActiveFilter = (filter) => {
 // Format deal data for PropertyCard component
 const formatDealForPropertyCard = (deal) => {
   return {
-    bookmark_id: deal.id,
-    building_id: deal.property?.id || deal.id,
-    complex_id: deal.property?.complex_id || '',
-    seller_nickname: deal.seller?.nickname || '판매자',
-    sale_type: deal.property?.sale_type || '매매',
-    price: deal.property?.price || deal.price || '',
-    deposit: deal.property?.deposit || '',
-    bookmark_count: deal.bookmark_count || 0,
-    created_at: deal.created_at || '',
-    building_name: deal.property?.building_name || deal.property_name || '매물명',
-    seller_type: deal.seller?.type || '',
-    property_type: deal.property?.property_type || '아파트',
-    info_oneline: deal.property?.address || deal.address || '주소 정보',
-    image_url: deal.property?.image_url || deal.image_url || '/default-property.jpg',
-    facility: deal.property?.facility || '',
+    buildingId: deal.buildingId,
+    buildingName: deal.buildingName,
+    address: deal.address,
+    imageUrl: deal.imageUrl || '/default-property.jpg',
+    price: deal.price,
+    dealStatus: deal.dealStatus,
+    createdAt: deal.createdAt,
+    saleType: deal.saleType,
+    houseType: deal.houseType,
     // 거래 관련 추가 정보
-    deal_status: deal.status,
-    deal_id: deal.id,
-    user_role: deal.user_role,
+    deal_id: deal.buildingId,
+    user_role: deal.dealStatus === '구매중' ? 'buyer' : 'seller',
   }
 }
 
@@ -269,7 +244,7 @@ onMounted(() => {
         >
           <PropertyCardWaiting
             v-for="deal in filteredDeals"
-            :key="deal.id"
+            :key="deal.buildingId"
             :property="formatDealForPropertyCard(deal)"
             @detail="handleDealDetail"
           />

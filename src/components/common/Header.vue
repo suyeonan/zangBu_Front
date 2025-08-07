@@ -15,9 +15,9 @@
       </div>
 
       <!-- Main Content Section -->
-      <div class="flex-1 flex justify-between items-center ml-4 md:ml-6 lg:ml-8">
+      <div class="flex-1 flex justify-between items-center ml-4">
         <!-- Search Bar -->
-        <div class="flex-1 max-w-2xl mx-4 md:mx-6 lg:mx-8">
+        <div class="flex-1 max-w-2xl mx-4 md:mx-6">
           <div class="relative">
             <div class="flex items-center bg-zinc-100 rounded-lg px-3 py-2">
               <i class="fas fa-search text-neutral-600 text-base mr-2"></i>
@@ -72,17 +72,14 @@
             >
               거래
             </button>
-            <button
-              @click="handleNavigation('mypage')"
-              class="text-green-900 text-base md:text-lg font-medium font-roboto hover:text-brand-1 transition-colors whitespace-nowrap"
-            >
-              마이페이지
-            </button>
           </nav>
 
           <!-- User Profile Section -->
           <div class="flex items-center gap-2 md:gap-3">
-            <div class="flex items-center gap-2 md:gap-3">
+            <button
+              @click="handleNavigation('mypage')"
+              class="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity cursor-pointer"
+            >
               <div
                 class="w-8 h-8 md:w-9 md:h-9 bg-brand-3 rounded-full flex items-center justify-center"
               >
@@ -103,7 +100,7 @@
               >
                 김철수
               </span>
-            </div>
+            </button>
             <!-- Notification Bell Icon -->
             <button class="relative" @click="handleNavigation('notification')">
               <!-- 종 아이콘 -->
@@ -129,11 +126,19 @@
                 {{ store.unreadCount > 99 ? '99+' : store.unreadCount }}
               </span>
             </button>
+            <!-- Hamburger Menu Button for Desktop -->
             <button
-              @click="handleLogout"
-              class="px-3 py-1.5 md:px-4 md:py-2 text-brand-1 text-sm md:text-base font-semibold font-inter border border-brand-2 rounded-lg hover:bg-brand-2 hover:text-white transition-colors whitespace-nowrap"
+              @click="toggleSidebar"
+              class="w-10 h-10 flex items-center justify-center text-green-900 hover:text-brand-1 transition-colors"
             >
-              로그아웃
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 6h16M4 12h16M4 18h16"
+                ></path>
+              </svg>
             </button>
           </div>
         </div>
@@ -141,9 +146,9 @@
     </div>
 
     <!-- Mobile Header -->
-    <div class="lg:hidden w-full bg-white px-4 py-3">
+    <div class="lg:hidden w-full bg-white px-4 py-4">
       <!-- Top Row: Logo, Search, User Profile, and Hamburger -->
-      <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center justify-between">
         <!-- Logo -->
         <div class="flex-shrink-0">
           <img
@@ -157,7 +162,10 @@
         <!-- Search Bar -->
         <div class="flex-1 mx-2 sm:mx-3 min-w-0">
           <div class="relative">
-            <div class="flex items-center bg-zinc-100 rounded-lg px-2 sm:px-3 py-2">
+            <!-- 640px 이상에서는 전체 검색창 -->
+            <div
+              class="flex max-[639px]:hidden items-center bg-zinc-100 rounded-lg px-2 sm:px-3 py-2"
+            >
               <i class="fas fa-search text-neutral-600 text-sm mr-1 sm:mr-2 flex-shrink-0"></i>
               <input
                 v-model="searchQuery"
@@ -175,12 +183,23 @@
                 <i class="fas fa-times text-xs"></i>
               </button>
             </div>
+
+            <!-- 639px 이하에서는 검색 아이콘만 -->
+            <button
+              @click="handleSearchIconClick"
+              class="hidden max-[639px]:flex w-10 h-10 items-center justify-center bg-zinc-100 rounded-lg hover:bg-zinc-200 transition-colors"
+            >
+              <i class="fas fa-search text-neutral-600 text-sm"></i>
+            </button>
           </div>
         </div>
 
         <!-- User Profile and Logout -->
-        <div class="flex items-center gap-1 sm:gap-2 mr-1 sm:mr-2">
-          <div class="flex items-center gap-1">
+        <div class="flex items-center gap-1 sm:gap-2 mr-1 sm:mr-2 h-10">
+          <button
+            @click="handleNavigation('mypage')"
+            class="flex items-center gap-1 h-full hover:opacity-80 transition-opacity"
+          >
             <div
               class="w-6 h-6 sm:w-7 sm:h-7 bg-brand-3 rounded-full flex items-center justify-center flex-shrink-0"
             >
@@ -201,15 +220,15 @@
             >
               김철수
             </span>
-          </div>
+          </button>
           <!-- Notification Bell Icon -->
           <button
             @click="handleNavigation('notification')"
-            class="relative text-green-900 hover:text-brand-1 transition-colors"
+            class="relative text-green-900 hover:text-brand-1 transition-colors h-full flex items-center justify-center"
           >
             <!-- 종 아이콘 -->
             <svg
-              class="w-6 h-6 md:w-7 md:h-7"
+              class="w-5 h-5 sm:w-6 sm:h-6"
               fill="none"
               stroke="currentColor"
               stroke-width="1.5"
@@ -232,7 +251,7 @@
           </button>
           <button
             @click="handleLogout"
-            class="text-brand-1 text-xs font-semibold font-inter border border-brand-2 rounded px-2 py-1 sm:px-3 sm:py-1.5 hover:bg-brand-2 hover:text-white transition-colors whitespace-nowrap flex-shrink-0"
+            class="hidden text-brand-1 text-xs font-semibold font-inter border border-brand-2 rounded px-2 py-1 hover:bg-brand-2 hover:text-white transition-colors whitespace-nowrap flex-shrink-0 h-full items-center"
           >
             로그아웃
           </button>
@@ -241,7 +260,7 @@
         <!-- Hamburger Menu Button -->
         <button
           @click="toggleSidebar"
-          class="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-green-900 hover:text-brand-1 transition-colors"
+          class="flex-shrink-0 w-10 h-10 flex items-center justify-center text-green-900 hover:text-brand-1 transition-colors"
         >
           <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -305,6 +324,7 @@ const sidebarMenuItems = [
   { id: 'chat', label: '채팅', action: 'navigate' },
   { id: 'trade', label: '거래', action: 'navigate' },
   { id: 'mypage', label: '마이페이지', action: 'navigate' },
+  { id: 'logout', label: '로그아웃', action: 'logout' },
 ]
 
 // Methods
@@ -313,7 +333,7 @@ const handleLogout = () => {
 }
 
 const handleLogoClick = () => {
-  router.push('/main')
+  router.push('/')
 }
 
 const handleNavigation = (route) => {
@@ -333,7 +353,7 @@ const handleNavigation = (route) => {
       router.push('/deal/waitinglist')
       break
     case 'mypage':
-      router.push('/mypage')
+      router.push('/user/mypage')
       break
     default:
       console.log('알 수 없는 라우트:', route)
@@ -351,7 +371,13 @@ const closeSidebar = () => {
 
 const handleSidebarMenuClick = (item) => {
   console.log('사이드바 메뉴 클릭:', item)
-  handleNavigation(item.id)
+
+  if (item.action === 'logout') {
+    handleLogout()
+  } else {
+    handleNavigation(item.id)
+  }
+
   closeSidebar()
 }
 
@@ -370,6 +396,11 @@ const clearSearch = () => {
   searchQuery.value = ''
   console.log('검색어 초기화')
 }
+
+const handleSearchIconClick = () => {
+  console.log('검색 아이콘 클릭 - 검색 모달 또는 페이지로 이동')
+  // TODO: 검색 모달을 열거나 검색 페이지로 이동하는 로직 구현
+}
 </script>
 
 <style scoped>
@@ -384,7 +415,6 @@ const clearSearch = () => {
 
 /* Search input focus effect */
 input:focus {
-  outline: 2px solid #68a63c;
-  outline-offset: 2px;
+  outline: none;
 }
 </style>

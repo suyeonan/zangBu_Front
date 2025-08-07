@@ -134,6 +134,16 @@ const router = createRouter({
       path: '/auth/find-password',
       name: 'find-password',
       component: FindPasswordView,
+      beforeEnter: (to, from, next) => {
+        const verified = sessionStorage.getItem('verified') === 'true'
+        if (!verified) {
+          // 인증 안 했으면 verify 페이지로 이동
+          return next('/auth/verify')
+        }
+        // 인증이 끝난 경우 verified 상태 초기화
+        sessionStorage.removeItem('verified')
+        next()
+      }
     },
 
     // 사용자 관련 라우트
