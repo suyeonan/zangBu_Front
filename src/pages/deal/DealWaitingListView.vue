@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { getDeals } from '@/api/deal/deal.js'
 import PropertyCardWaiting from '@/components/common/PropertyCardWaiting.vue'
 import Button from '@/components/common/Button.vue'
+import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const router = useRouter()
 
@@ -13,7 +14,7 @@ const loading = ref(false)
 const error = ref(null)
 const activeFilter = ref('buying') // 기본값을 '구매 중'으로 설정
 
-// Dummy data for testing - 실제 API 구조에 맞춤 (카멜케이스)
+// Dummy data for testing - 새로운 API 구조에 맞춤 (카멜케이스)
 const dummyDeals = [
   {
     buildingId: '1',
@@ -23,8 +24,9 @@ const dummyDeals = [
     saleType: '매매',
     imageUrl: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=300&fit=crop',
     address: '서울시 광진구 자양로 21길 16-26',
-    dealStatus: '구매중',
+    userStatus: '구매중',
     createdAt: '2024-01-15',
+    dealStatus: 'BEFORE_OWNER',
   },
   {
     buildingId: '2',
@@ -34,8 +36,9 @@ const dummyDeals = [
     saleType: '전세',
     imageUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=300&fit=crop',
     address: '서울시 마포구 합정동 123-45',
-    dealStatus: '판매중',
+    userStatus: '판매중',
     createdAt: '2024-01-14',
+    dealStatus: 'BEFORE_OWNER',
   },
   {
     buildingId: '3',
@@ -45,8 +48,9 @@ const dummyDeals = [
     saleType: '매매',
     imageUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=300&fit=crop',
     address: '서울시 송파구 잠실로 222',
-    dealStatus: '판매중',
+    userStatus: '판매중',
     createdAt: '2024-01-13',
+    dealStatus: 'MIDDLE_DEAL',
   },
   {
     buildingId: '4',
@@ -56,8 +60,9 @@ const dummyDeals = [
     saleType: '월세',
     imageUrl: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400&h=300&fit=crop',
     address: '경기도 성남시 분당구 수내동 88-1',
-    dealStatus: '구매중',
+    userStatus: '구매중',
     createdAt: '2024-01-12',
+    dealStatus: 'BEFORE_CONSUMER',
   },
   {
     buildingId: '5',
@@ -67,8 +72,9 @@ const dummyDeals = [
     saleType: '매매',
     imageUrl: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400&h=300&fit=crop',
     address: '서울시 강남구 테헤란로 123',
-    dealStatus: '판매중',
+    userStatus: '판매중',
     createdAt: '2024-01-11',
+    dealStatus: 'BEFORE_OWNER',
   },
   {
     buildingId: '6',
@@ -78,8 +84,9 @@ const dummyDeals = [
     saleType: '매매',
     imageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop',
     address: '서울시 마포구 월드컵로 123',
-    dealStatus: '구매중',
+    userStatus: '구매중',
     createdAt: '2024-01-10',
+    dealStatus: 'BEFORE_CONSUMER',
   },
   {
     buildingId: '7',
@@ -89,8 +96,9 @@ const dummyDeals = [
     saleType: '전세',
     imageUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=300&fit=crop',
     address: '서울시 송파구 잠실동 123',
-    dealStatus: '판매중',
+    userStatus: '판매중',
     createdAt: '2024-01-09',
+    dealStatus: 'MIDDLE_DEAL',
   },
   {
     buildingId: '8',
@@ -100,8 +108,33 @@ const dummyDeals = [
     saleType: '월세',
     imageUrl: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&h=300&fit=crop',
     address: '서울시 양천구 목동 456',
-    dealStatus: '구매중',
+    userStatus: '구매중',
     createdAt: '2024-01-08',
+    dealStatus: 'BEFORE_CONSUMER',
+  },
+  {
+    buildingId: '9',
+    price: '680000000',
+    buildingName: '강남타워',
+    houseType: '아파트',
+    saleType: '매매',
+    imageUrl: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=300&fit=crop',
+    address: '서울시 강남구 역삼동 123',
+    userStatus: '판매중',
+    createdAt: '2024-01-05',
+    dealStatus: 'CLOSE_DEAL',
+  },
+  {
+    buildingId: '10',
+    price: '320000000',
+    buildingName: '서초빌라',
+    houseType: '빌라',
+    saleType: '전세',
+    imageUrl: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400&h=300&fit=crop',
+    address: '서울시 서초구 서초동 456',
+    userStatus: '구매중',
+    createdAt: '2024-01-03',
+    dealStatus: 'CLOSE_DEAL',
   },
 ]
 
@@ -120,8 +153,10 @@ const fetchDeals = async () => {
     // Uncomment below to use real API
     // const response = await getDeals()
     // deals.value = response.data?.deals || []
+
+    // For now, using dummy data with proper dealStatusEnum values
+    deals.value = dummyDeals
   } catch (err) {
-    console.error('Failed to fetch deals:', err)
     error.value = '거래 목록을 불러오는데 실패했습니다. 다시 시도해주세요.'
   } finally {
     loading.value = false
@@ -133,9 +168,11 @@ const filteredDeals = computed(() => {
   if (activeFilter.value === 'all') {
     return deals.value
   } else if (activeFilter.value === 'buying') {
-    return deals.value.filter((deal) => deal.dealStatus === '구매중')
+    return deals.value.filter((deal) => deal.userStatus === '구매중')
   } else if (activeFilter.value === 'selling') {
-    return deals.value.filter((deal) => deal.dealStatus === '판매중')
+    return deals.value.filter((deal) => deal.userStatus === '판매중')
+  } else if (activeFilter.value === 'completed') {
+    return deals.value.filter((deal) => deal.dealStatus === 'CLOSE_DEAL')
   }
   return deals.value
 })
@@ -147,30 +184,104 @@ const setActiveFilter = (filter) => {
 
 // Format deal data for PropertyCard component
 const formatDealForPropertyCard = (deal) => {
-  return {
+  console.log('=== formatDealForPropertyCard ===')
+  console.log('Original deal:', deal)
+
+  const formattedProperty = {
     buildingId: deal.buildingId,
     buildingName: deal.buildingName,
     address: deal.address,
     imageUrl: deal.imageUrl || '/default-property.jpg',
     price: deal.price,
-    dealStatus: deal.dealStatus,
+    dealStatus: deal.userStatus,
     createdAt: deal.createdAt,
     saleType: deal.saleType,
     houseType: deal.houseType,
-    // 거래 관련 추가 정보
-    deal_id: deal.buildingId,
-    user_role: deal.dealStatus === '구매중' ? 'buyer' : 'seller',
+    // 거래 관련 추가 정보 (카멜케이스)
+    dealId: deal.buildingId,
+    userRole: deal.userStatus === '구매중' ? 'buyer' : 'seller',
+    // 새로운 dealStatus 필드 추가
+    dealStatusEnum: deal.dealStatus,
   }
+
+  console.log('Formatted property:', formattedProperty)
+  console.log('dealId:', formattedProperty.dealId)
+  console.log('userRole:', formattedProperty.userRole)
+
+  return formattedProperty
 }
 
 // Handle deal detail
 const handleDealDetail = (property) => {
-  const dealId = property.deal_id
-  if (property.user_role === 'seller') {
-    router.push(`/deal/seller/${dealId}`)
+  console.log('=== handleDealDetail Debug ===')
+  console.log('Received property:', property)
+  console.log('dealId:', property.dealId)
+  console.log('userRole:', property.userRole)
+  console.log('buildingId:', property.buildingId)
+
+  const dealId = property.dealId
+  const targetRoute =
+    property.userRole === 'seller' ? `/deal/seller/${dealId}` : `/deal/buyer/${dealId}`
+
+  console.log('Target route:', targetRoute)
+
+  // 페이지 이동 전에 Header 아래로 스크롤
+  window.scrollTo({
+    top: 96, // Header 높이 (h-24 = 96px)
+    behavior: 'smooth',
+  })
+
+  if (property.userRole === 'seller') {
+    router
+      .push(`/deal/seller/${dealId}`)
+      .then(() => {
+        console.log('Successfully navigated to seller page')
+        // 페이지 이동 후에도 Header 아래로 스크롤
+        window.scrollTo({
+          top: 96, // Header 높이 (h-24 = 96px)
+          behavior: 'smooth',
+        })
+      })
+      .catch((err) => {
+        console.error('Failed to navigate to seller page:', err)
+      })
   } else {
-    router.push(`/deal/buyer/${dealId}`)
+    router
+      .push(`/deal/buyer/${dealId}`)
+      .then(() => {
+        console.log('Successfully navigated to buyer page')
+        // 페이지 이동 후에도 Header 아래로 스크롤
+        window.scrollTo({
+          top: 96, // Header 높이 (h-24 = 96px)
+          behavior: 'smooth',
+        })
+      })
+      .catch((err) => {
+        console.error('Failed to navigate to buyer page:', err)
+      })
   }
+}
+
+// Handle view details for completed deals
+const handleViewDetails = (property) => {
+  console.log('=== handleViewDetails Debug ===')
+  console.log('Received property:', property)
+  console.log('dealId:', property.dealId)
+  console.log('buildingId:', property.buildingId)
+
+  // 거래 내역 페이지로 이동 (예: 거래 완료 상세 페이지)
+  router.push(`/deal/completed/${property.dealId}`)
+}
+
+// Handle review for completed deals
+const handleReview = (property) => {
+  console.log('=== handleReview Debug ===')
+  console.log('Received property:', property)
+  console.log('dealId:', property.dealId)
+  console.log('buildingId:', property.buildingId)
+
+  // 리뷰 작성 페이지로 이동
+  router.push(`/review/write/${property.dealId}`)
 }
 
 // Initialize component
@@ -211,13 +322,17 @@ onMounted(() => {
         >
           판매 중
         </Button>
+        <Button
+          :variant="activeFilter === 'completed' ? 'button1' : 'button10'"
+          size="sm"
+          @click="setActiveFilter('completed')"
+        >
+          거래 완료
+        </Button>
       </div>
 
       <!-- Loading State -->
-      <div v-if="loading" class="loading-container">
-        <div class="loading-spinner"></div>
-        <p class="loading-text">거래 목록을 불러오는 중...</p>
-      </div>
+      <LoadingSpinner v-if="loading" text="거래 목록을 불러오는 중..." size="medium" />
 
       <!-- Error State -->
       <div v-else-if="error" class="error-container">
@@ -246,7 +361,9 @@ onMounted(() => {
             v-for="deal in filteredDeals"
             :key="deal.buildingId"
             :property="formatDealForPropertyCard(deal)"
-            @detail="handleDealDetail"
+            @edit="handleDealDetail"
+            @viewDetails="handleViewDetails"
+            @review="handleReview"
           />
         </div>
       </div>
@@ -331,7 +448,7 @@ onMounted(() => {
 
 .deals-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(25rem, 1fr));
   gap: 1.5rem;
   width: 100%;
   max-width: 75rem;
@@ -364,50 +481,17 @@ onMounted(() => {
   box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.15);
 }
 
-/* Loading State */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2.5rem 1.25rem;
-  min-height: calc(100vh - 18.75rem);
-}
-
-.loading-spinner {
-  width: 2.5rem;
-  height: 2.5rem;
-  border: 0.25rem solid var(--bg-2);
-  border-top: 0.25rem solid var(--brand-3);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.loading-text {
-  color: var(--text-2);
-  font-size: 1rem;
-  font-family: 'Roboto', sans-serif;
-}
-
 /* Error State */
 .error-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2.5rem 1.25rem;
+  padding: 4rem 1.25rem;
   text-align: center;
-  min-height: calc(100vh - 18.75rem);
+  width: 100%;
+  min-height: 50vh;
+  margin: 2rem 0;
 }
 
 .error-icon {
@@ -429,9 +513,11 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2.5rem 1.25rem;
+  padding: 4rem 1.25rem;
   text-align: center;
-  min-height: calc(100vh - 18.75rem);
+  width: 100%;
+  min-height: 50vh;
+  margin: 2rem 0;
 }
 
 .empty-icon {
@@ -512,19 +598,13 @@ onMounted(() => {
     font-size: 0.75rem !important;
   }
 
-  .loading-container,
   .error-container,
   .empty-container {
-    min-height: calc(100vh - 15.625rem);
-    padding: 2rem 1rem;
+    min-height: 40vh;
+    padding: 3rem 1rem;
+    margin: 1rem 0;
   }
 
-  .loading-spinner {
-    width: 2rem;
-    height: 2rem;
-  }
-
-  .loading-text,
   .error-text {
     font-size: 0.875rem;
   }
@@ -582,7 +662,7 @@ onMounted(() => {
   }
 
   .deals-grid {
-    grid-template-columns: repeat(auto-fit, minmax(18.75rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
     gap: 1.5rem;
     max-width: 100%;
   }
@@ -617,7 +697,7 @@ onMounted(() => {
   }
 
   .deals-grid {
-    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(25rem, 1fr));
     gap: 2rem;
     justify-items: center;
   }
@@ -637,7 +717,7 @@ onMounted(() => {
   }
 
   .deals-grid {
-    grid-template-columns: repeat(auto-fit, minmax(21.875rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(26.875rem, 1fr));
     gap: 2.25rem;
   }
 }
@@ -650,7 +730,7 @@ onMounted(() => {
   }
 
   .deals-grid {
-    grid-template-columns: repeat(auto-fit, minmax(23.75rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(28.75rem, 1fr));
     gap: 2.5rem;
   }
 }

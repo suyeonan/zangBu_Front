@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePropertyStore } from '@/stores/property/property'
+import { useAuthStore } from '@/stores/auth/auth'
 import Button from '@/components/common/Button.vue'
 import PropertyBasicInfoForm from '@/components/property/PropertyBasicInfoForm.vue'
 import PropertyDetailForm from '@/components/property/PropertyDetailForm.vue'
@@ -9,6 +10,17 @@ import PropertyContactForm from '@/components/property/PropertyContactForm.vue'
 
 const router = useRouter()
 const propertyStore = usePropertyStore()
+const authStore = useAuthStore()
+
+// 로그인 상태 확인
+onMounted(() => {
+  if (!authStore.isAuthenticated) {
+    console.log('로그인이 필요합니다. 로그인 페이지로 이동합니다.')
+    alert('매물 등록을 위해서는 로그인이 필요합니다.')
+    router.push('/auth/login')
+    return
+  }
+})
 
 // 폼 데이터
 const formData = ref({

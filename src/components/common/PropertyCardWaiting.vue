@@ -1,10 +1,13 @@
 <template>
-  <div class="property-card-waiting">
+  <div
+    class="property-card-waiting"
+    :class="{ 'completed-deal': property.dealStatusEnum === 'CLOSE_DEAL' }"
+  >
     <!-- Header with waiting status -->
     <div class="card-header">
-      <div class="waiting-badge">
-        <i class="fas fa-clock waiting-icon"></i>
-        <span class="waiting-text">{{ property.dealStatus || '대기중' }}</span>
+      <div class="waiting-badge" :style="{ background: getBadgeColor(property.dealStatusEnum) }">
+        <i :class="getStatusIcon(property.dealStatusEnum)" class="waiting-icon"></i>
+        <span class="waiting-text">{{ getStatusText(property.dealStatusEnum) }}</span>
       </div>
     </div>
 
@@ -14,10 +17,15 @@
         :src="property.imageUrl || '/default-property.jpg'"
         :alt="property.title || 'Property Image'"
         class="property-image"
+        :class="{ 'completed-image': property.dealStatusEnum === 'CLOSE_DEAL' }"
       />
-      <div class="waiting-overlay">
-        <i class="fas fa-clock overlay-icon"></i>
-        <span class="overlay-text">승인 대기중</span>
+      <div v-if="property.dealStatusEnum !== 'CLOSE_DEAL'" class="waiting-overlay">
+        <i :class="getStatusIcon(property.dealStatusEnum)" class="overlay-icon"></i>
+        <span class="overlay-text">{{ getStatusText(property.dealStatusEnum) }}</span>
+      </div>
+      <div v-if="property.dealStatusEnum === 'CLOSE_DEAL'" class="completed-overlay">
+        <i class="fas fa-check-circle overlay-icon completed-icon"></i>
+        <span class="overlay-text completed-text">거래 완료</span>
       </div>
     </div>
 
@@ -41,7 +49,7 @@
 
       <div class="waiting-info">
         <i class="fas fa-info-circle info-icon"></i>
-        <span class="waiting-info-text">{{ property.dealStatus || '대기중' }} 진행 중입니다</span>
+        <span class="waiting-info-text">{{ getStatusDescription(property.dealStatusEnum) }}</span>
       </div>
 
       <div class="submitted-date">
@@ -51,15 +59,47 @@
       <!-- Progress indicator -->
       <div class="progress-container">
         <div class="progress-bar">
-          <div class="progress-fill"></div>
+          <div
+            class="progress-fill"
+            :style="{
+              width: getProgressWidth(property.dealStatusEnum),
+              background: getProgressColor(property.dealStatusEnum),
+            }"
+          ></div>
         </div>
-        <span class="progress-text">승인 진행중...</span>
+        <span class="progress-text">{{ getProgressText(property.dealStatusEnum) }}</span>
       </div>
 
       <!-- Action buttons for waiting state -->
       <div class="action-buttons">
-        <button @click="handleEdit" class="primary-button">거래 이어가기</button>
-        <button @click="handleCancel" class="secondary-button">취소하기</button>
+        <button
+          v-if="property.dealStatusEnum !== 'CLOSE_DEAL'"
+          @click="handleEdit"
+          class="primary-button"
+        >
+          거래 이어가기
+        </button>
+        <button
+          v-if="property.dealStatusEnum !== 'CLOSE_DEAL'"
+          @click="handleCancel"
+          class="secondary-button"
+        >
+          취소하기
+        </button>
+        <button
+          v-if="property.dealStatusEnum === 'CLOSE_DEAL'"
+          @click="handleViewDetails"
+          class="primary-button completed-button"
+        >
+          거래 내역 보기
+        </button>
+        <button
+          v-if="property.dealStatusEnum === 'CLOSE_DEAL'"
+          @click="handleReview"
+          class="secondary-button completed-button"
+        >
+          리뷰 작성
+        </button>
       </div>
     </div>
   </div>
@@ -82,14 +122,131 @@ const props = defineProps({
       createdAt: '',
       saleType: '',
       houseType: '',
+      dealId: null,
+      userRole: '',
+      dealStatusEnum: '',
     }),
   },
 })
 
-const emit = defineEmits(['edit', 'cancel'])
+const emit = defineEmits(['edit', 'cancel', 'viewDetails', 'review'])
+
+// 거래 상태에 따른 텍스트 반환
+const getStatusText = (dealStatus) => {
+  switch (dealStatus) {
+    case 'BEFORE_OWNER':
+      return '판매자 수락 전'
+    case 'BEFORE_CONSUMER':
+      return '구매자 수락 전'
+    case 'MIDDLE_DEAL':
+      return '거래 중'
+    case 'CLOSE_DEAL':
+      return '거래 성사'
+    default:
+      return '대기중'
+  }
+}
+
+// 거래 상태에 따른 설명 반환
+const getStatusDescription = (dealStatus) => {
+  switch (dealStatus) {
+    case 'BEFORE_OWNER':
+      return '판매자의 수락을 기다리는 중입니다'
+    case 'BEFORE_CONSUMER':
+      return '구매자의 수락을 기다리는 중입니다'
+    case 'MIDDLE_DEAL':
+      return '거래가 진행 중입니다. 서류를 준비해주세요'
+    case 'CLOSE_DEAL':
+      return '거래가 성사되었습니다'
+    default:
+      return '거래 진행 중입니다'
+  }
+}
+
+// 거래 상태에 따른 진행률 반환
+const getProgressWidth = (dealStatus) => {
+  switch (dealStatus) {
+    case 'BEFORE_OWNER':
+      return '25%'
+    case 'BEFORE_CONSUMER':
+      return '50%'
+    case 'MIDDLE_DEAL':
+      return '75%'
+    case 'CLOSE_DEAL':
+      return '100%'
+    default:
+      return '25%'
+  }
+}
+
+// 거래 상태에 따른 진행 텍스트 반환
+const getProgressText = (dealStatus) => {
+  switch (dealStatus) {
+    case 'BEFORE_OWNER':
+      return '판매자 수락 대기 중...'
+    case 'BEFORE_CONSUMER':
+      return '구매자 수락 대기 중...'
+    case 'MIDDLE_DEAL':
+      return '거래 진행 중...'
+    case 'CLOSE_DEAL':
+      return '거래 완료!'
+    default:
+      return '승인 진행중...'
+  }
+}
+
+// 거래 상태에 따른 진행률 색상 반환
+const getProgressColor = (dealStatus) => {
+  switch (dealStatus) {
+    case 'BEFORE_OWNER':
+      return 'linear-gradient(90deg, #ff9800, #f57c00)'
+    case 'BEFORE_CONSUMER':
+      return 'linear-gradient(90deg, #2196f3, #1976d2)'
+    case 'MIDDLE_DEAL':
+      return 'linear-gradient(90deg, #4caf50, #388e3c)'
+    case 'CLOSE_DEAL':
+      return 'linear-gradient(90deg, #28a745, #20c997)'
+    default:
+      return 'linear-gradient(90deg, #ff9800, #f57c00)'
+  }
+}
+
+// 거래 상태에 따른 배지 색상 반환
+const getBadgeColor = (dealStatus) => {
+  switch (dealStatus) {
+    case 'BEFORE_OWNER':
+      return '#ff9800'
+    case 'BEFORE_CONSUMER':
+      return '#2196f3'
+    case 'MIDDLE_DEAL':
+      return '#4caf50'
+    case 'CLOSE_DEAL':
+      return '#28a745'
+    default:
+      return '#ff9800'
+  }
+}
+
+// 거래 상태에 따른 아이콘 반환
+const getStatusIcon = (dealStatus) => {
+  switch (dealStatus) {
+    case 'BEFORE_OWNER':
+      return 'fas fa-user-check'
+    case 'BEFORE_CONSUMER':
+      return 'fas fa-user-clock'
+    case 'MIDDLE_DEAL':
+      return 'fas fa-file-contract'
+    case 'CLOSE_DEAL':
+      return 'fas fa-check-circle'
+    default:
+      return 'fas fa-clock'
+  }
+}
 
 // Handle edit
 const handleEdit = () => {
+  console.log('=== PropertyCardWaiting handleEdit ===')
+  console.log('Emitting edit event with property:', props.property)
   emit('edit', props.property)
 }
 
@@ -97,11 +254,25 @@ const handleEdit = () => {
 const handleCancel = () => {
   emit('cancel', props.property)
 }
+
+// Handle view details for completed deals
+const handleViewDetails = () => {
+  console.log('=== PropertyCardWaiting handleViewDetails ===')
+  console.log('Emitting viewDetails event with property:', props.property)
+  emit('viewDetails', props.property)
+}
+
+// Handle review for completed deals
+const handleReview = () => {
+  console.log('=== PropertyCardWaiting handleReview ===')
+  console.log('Emitting review event with property:', props.property)
+  emit('review', props.property)
+}
 </script>
 
 <style scoped>
 .property-card-waiting {
-  width: 320px;
+  width: 500px;
   background: white;
   border-radius: 12px;
   box-shadow: 0px 4px 6px 0px rgba(0, 0, 0, 0.1);
@@ -116,6 +287,17 @@ const handleCancel = () => {
   opacity: 1;
 }
 
+/* Completed deal card styles */
+.property-card-waiting.completed-deal {
+  opacity: 0.9;
+}
+
+.property-card-waiting.completed-deal:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 0px 8px 16px 0px rgba(40, 167, 69, 0.2);
+}
+
 /* Header */
 .card-header {
   padding: 16px 20px 12px 20px;
@@ -125,7 +307,6 @@ const handleCancel = () => {
 }
 
 .waiting-badge {
-  background: #ffc107;
   border-radius: 20px;
   padding: 6px 12px;
   display: flex;
@@ -185,6 +366,37 @@ const handleCancel = () => {
   font-size: 14px;
   font-weight: 600;
   font-family: 'Roboto', sans-serif;
+}
+
+/* Completed deal overlay styles */
+.completed-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(40, 167, 69, 0.4);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.completed-icon {
+  color: white;
+  font-size: 24px;
+}
+
+.completed-text {
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Roboto', sans-serif;
+}
+
+.completed-image {
+  filter: none;
 }
 
 /* Details */
@@ -339,6 +551,16 @@ const handleCancel = () => {
   color: var(--status-2);
 }
 
+/* Completed deal button styles */
+.completed-button {
+  transition: all 0.2s ease;
+}
+
+.completed-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0px 4px 8px 0px rgba(0, 0, 0, 0.1);
+}
+
 /* Progress indicator */
 .progress-container {
   display: flex;
@@ -356,9 +578,7 @@ const handleCancel = () => {
 }
 
 .progress-fill {
-  width: 60%;
   height: 100%;
-  background: linear-gradient(90deg, #ffc107, #ffb300);
   border-radius: 2px;
   animation: progress-pulse 2s ease-in-out infinite;
 }
@@ -385,7 +605,7 @@ const handleCancel = () => {
 @media (max-width: 768px) {
   .property-card-waiting {
     width: 100%;
-    max-width: 320px;
+    max-width: 500px;
   }
 
   .details-container {
@@ -511,7 +731,7 @@ const handleCancel = () => {
 @media (min-width: 769px) and (max-width: 1024px) {
   .property-card-waiting {
     width: 100%;
-    max-width: 340px;
+    max-width: 500px;
   }
 
   .details-container {
@@ -530,7 +750,7 @@ const handleCancel = () => {
 
 @media (min-width: 1025px) {
   .property-card-waiting {
-    width: 320px;
+    width: 500px;
   }
 
   .property-card-waiting:hover {

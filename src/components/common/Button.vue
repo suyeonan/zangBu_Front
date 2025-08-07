@@ -2,26 +2,31 @@
   <!--
     공용 Button 컴포넌트
     - 10가지 variant 지원 (button1 ~ button10)
-    - 3가지 size 지원 (sm, md, lg)
+    - 크기 커스터마이징 지원 (width, height)
     - 아이콘 지원 (왼쪽/오른쪽)
     - 전체 너비 옵션
     - 비활성화 상태 지원
+    - 반응형 지원 (app/desktop 브레이크포인트)
   -->
   <button
     :class="[
       'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed rounded-lg',
       // Variant styles - 버튼 스타일 (색상, 배경 등)
       variantClasses[variant],
-      // Size classes - 버튼 크기 (패딩, 폰트 크기 등)
-      sizeClasses[variant],
+      // 기본 패딩과 폰트 크기
+      'app:px-3 app:py-1.5 app:text-sm desktop:px-4 desktop:py-2 desktop:text-base',
       // Full width - 전체 너비 옵션
       { 'w-full': fullWidth },
     ]"
+    :style="buttonStyle"
     :disabled="disabled"
     @click="$emit('click', $event)"
   >
     <!-- 왼쪽 아이콘 (iconRight가 false일 때) -->
-    <i v-if="icon && !iconRight" :class="[icon, 'mr-2', iconSizeClasses[variant]]"></i>
+    <i
+      v-if="icon && !iconRight"
+      :class="[icon, 'mr-2', 'app:w-4 app:h-4 desktop:w-5 desktop:h-5']"
+    ></i>
 
     <!-- button4의 기본 다운로드 아이콘 (비활성화) -->
     <!-- <svg
@@ -46,11 +51,16 @@
     </span>
 
     <!-- 오른쪽 아이콘 (iconRight가 true일 때) -->
-    <i v-if="icon && iconRight" :class="[icon, 'ml-2', iconSizeClasses[variant]]"></i>
+    <i
+      v-if="icon && iconRight"
+      :class="[icon, 'ml-2', 'app:w-4 app:h-4 desktop:w-5 desktop:h-5']"
+    ></i>
   </button>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 // Props 정의
 const props = defineProps({
   // 버튼 스타일 변형 (10가지 옵션)
@@ -72,11 +82,15 @@ const props = defineProps({
         'button11',
       ].includes(value),
   },
-  // 버튼 크기 (sm, md, lg)
-  size: {
+  // 버튼 너비 (CSS 값: px, rem, %, auto 등)
+  width: {
     type: String,
-    default: 'md',
-    validator: (value) => ['sm', 'md', 'lg'].includes(value),
+    default: 'auto',
+  },
+  // 버튼 높이 (CSS 값: px, rem, %, auto 등)
+  height: {
+    type: String,
+    default: 'auto',
   },
   // 아이콘 컴포넌트 (문자열 또는 컴포넌트 객체)
   icon: {
@@ -118,35 +132,31 @@ const variantClasses = {
   button11: 'bg-white border border-red-500 text-red-500 hover:bg-red-50', // 흰색 배경, 빨간색 테두리와 텍스트
 }
 
-// 크기별 클래스 (variant별로 고정 크기 - 원래 CSS와 동일)
-const sizeClasses = {
-  button1: 'w-50 h-12.5 px-4 py-2 text-base', // 200x50px
-  button2: 'w-50 h-12.5 px-4 py-2 text-base', // 200x50px
-  button3: 'w-50 h-12.5 px-4 py-2 text-base', // 200x50px
-  button4: 'w-50 h-12.5 px-4 py-2 text-base', // 200x50px
-  button5: 'w-20.75 h-9.5 px-2 py-1 text-sm', // 83x38px
-  button6: 'w-20.75 h-9.5 px-2 py-1 text-sm', // 83x38px
-  button7: 'w-15 h-9.5 px-2 py-1 text-sm', // 60x38px
-  button8: 'w-26.25 h-8.5 px-3 py-1 text-sm', // 105x34px
-  button9: 'w-45.75 h-10 px-4 py-2 text-base', // 183x40px
-  button10: 'w-45.75 h-10 px-4 py-2 text-base', // 183x40px
-  button11: 'w-45.75 h-10 px-4 py-2 text-base', // 183x40px
-}
+// 버튼 스타일 계산
+const buttonStyle = computed(() => {
+  const style = {}
 
-// 아이콘 크기 클래스
-const iconSizeClasses = {
-  button1: 'w-5 h-5',
-  button2: 'w-5 h-5',
-  button3: 'w-5 h-5',
-  button4: 'w-5 h-5',
-  button5: 'w-4 h-4',
-  button6: 'w-4 h-4',
-  button7: 'w-4 h-4',
-  button8: 'w-4 h-4',
-  button9: 'w-5 h-5',
-  button10: 'w-5 h-5',
-  button11: 'w-5 h-5',
-}
+  if (props.width !== 'auto') {
+    // 반응형 크기 설정
+    const isDesktop = window.innerWidth >= 1024
+
+    if (isDesktop) {
+      // 데스크톱에서는 1.5배 크게
+      const widthValue = parseInt(props.width)
+      const heightValue = parseInt(props.height)
+      style.width = `${widthValue * 1.5}px`
+      style.height = `${heightValue * 1.2}px`
+      style.fontSize = '1.125rem' // text-lg
+      style.padding = '1.5rem 2rem' // px-8 py-6
+    } else {
+      // 모바일에서는 원래 크기
+      style.width = props.width
+      style.height = props.height
+    }
+  }
+
+  return style
+})
 </script>
 
 <style scoped>
