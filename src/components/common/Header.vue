@@ -1,5 +1,5 @@
 <template>
-  <header class="w-full bg-white shadow-sm">
+  <header class="w-full bg-white shadow-sm relative z-[60]">
     <!-- Desktop Header -->
     <div
       class="hidden lg:flex w-full max-w-7xl mx-auto h-24 bg-white items-center px-4 lg:px-6 xl:px-8"
@@ -284,8 +284,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import Sidebar from './Sidebar.vue'
 import SearchModal from './SearchModal.vue'
 import { useNotificationStore } from '@/stores/notification/notification'
@@ -297,6 +297,10 @@ import { listenForegroundMessage } from '@/utils/fcm'
 // 스토어 인스턴스 가져오기
 const notificationStore = useNotificationStore()
 const authStore = useAuthStore()
+
+// Router 인스턴스 가져오기
+const router = useRouter()
+const route = useRoute()
 
 // Computed properties
 const userName = computed(() => authStore.user?.name || '')
@@ -316,7 +320,15 @@ onMounted(() => {
   listenForegroundMessage()
 })
 
-const router = useRouter()
+// 라우트 변경 시 사이드바 닫기
+watch(
+  () => route.path,
+  () => {
+    if (isSidebarOpen.value) {
+      closeSidebar()
+    }
+  }
+)
 
 // Reactive data
 const searchQuery = ref('')

@@ -6,15 +6,18 @@
       :value="modelValue"
       :disabled="disabled"
       :required="required"
+      :readonly="readonly"
       :maxlength="maxlength"
       :minlength="minlength"
       :name="name"
       :id="id"
-      class="w-full px-3 py-2 text-base leading-6 text-text-2 bg-bg-2 border border-bg-1 rounded-lg outline-none box-border placeholder:text-text-1 placeholder:text-base disabled:bg-bg-1 disabled:text-text-1 disabled:cursor-not-allowed disabled:opacity-60 focus:border-brand-3 focus:ring-1 focus:ring-brand-3 transition-colors"
+      class="w-full px-4 py-3 text-base leading-6 text-text-2 bg-bg-2 border border-bg-1 rounded-lg outline-none box-border placeholder:text-text-1 placeholder:text-base disabled:bg-bg-1 disabled:text-text-1 disabled:cursor-not-allowed disabled:opacity-60 focus:border-brand-3 focus:ring-1 focus:ring-brand-3 transition-colors"
       @input="handleInput"
       @focus="handleFocus"
       @blur="handleBlur"
       @change="handleChange"
+      @keypress="handleKeypress"
+      @click="handleClick"
     />
   </div>
 </template>
@@ -44,6 +47,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  readonly: {
+    type: Boolean,
+    default: false,
+  },
   maxlength: {
     type: Number,
     default: null,
@@ -63,7 +70,15 @@ const props = defineProps({
 })
 
 // Emits 정의
-const emit = defineEmits(['update:modelValue', 'input', 'focus', 'blur', 'change'])
+const emit = defineEmits([
+  'update:modelValue',
+  'input',
+  'focus',
+  'blur',
+  'change',
+  'keypress',
+  'click',
+])
 
 // 메서드들
 const handleInput = (event) => {
@@ -96,5 +111,13 @@ const handleBlur = (event) => {
 
 const handleChange = (event) => {
   emit('change', event)
+}
+
+const handleKeypress = (event) => {
+  emit('keypress', event)
+}
+
+const handleClick = (event) => {
+  emit('click', event)
 }
 </script>

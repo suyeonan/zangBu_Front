@@ -1,16 +1,12 @@
 <template>
   <aside
     :class="[
-      'fixed bg-white shadow-lg z-50',
+      'bg-white shadow-lg',
+      // 데스크탑에서는 absolute, 모바일에서는 fixed
+      'lg:absolute lg:top-24 lg:right-0 lg:w-full lg:h-auto lg:z-40',
+      'fixed top-0 right-0 w-80 h-screen z-50',
       // 데스크탑에서는 애니메이션 없음, 모바일에서는 transition 적용
       'lg:transition-none transition-all duration-300',
-      // 데스크탑에서는 전체 너비, 모바일에서는 320px
-      'lg:w-full w-80',
-      // 데스크탑에서는 헤더 높이(96px) 아래에서 시작, 모바일에서는 최상단
-      'lg:top-24 top-0',
-      'right-0',
-      // 데스크탑에서는 자동 높이, 모바일에서는 전체 화면 높이
-      'lg:h-auto h-screen',
       // 데스크탑에서는 애니메이션 없음, 모바일에서는 오른쪽에서 왼쪽으로
       isOpen ? 'lg:translate-y-0 translate-x-0' : 'lg:translate-y-0 translate-x-full',
     ]"
