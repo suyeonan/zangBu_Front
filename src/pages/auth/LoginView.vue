@@ -45,7 +45,7 @@ function login() {
     <!-- 왼쪽 이미지 영역 -->
     <div class="w-1/2 h-full">
       <img
-        src="https://image.ajunews.com/content/image/2022/04/04/20220404181310254680.jpg"
+        src="/src/assets/login_image.png"
         alt="로그인 이미지"
         class="w-full h-full object-cover"
       />
