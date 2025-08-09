@@ -345,6 +345,11 @@ const router = createRouter({
       name: 'sidebar-guide',
       component: SidebarGuideView,
     },
+    {
+      path: '/membership',
+      name: 'membership',
+      component: () => import('@/pages/membership/MembershipView.vue'),
+    },
   ],
 })
 

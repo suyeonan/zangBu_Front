@@ -253,7 +253,7 @@ const goBack = () => {
 
 <template>
   <div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-2xl mx-auto px-4">
+    <div class="mx-auto px-4 max-w-3xl lg:max-w-5xl xl:max-w-6xl">
       <!-- 헤더 -->
       <div class="text-center mb-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-2">결제 확인</h1>
@@ -269,207 +269,220 @@ const goBack = () => {
       <div v-if="successMessage" class="mb-4 p-4 bg-green-50 border border-green-200 rounded-md">
         <p class="text-green-600 text-sm">{{ successMessage }}</p>
       </div>
+      <!-- 본문: 좌/우 2컬럼 레이아웃 (데스크탑) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Left: 선택된 결제 정보 + 구매자 정보 -->
+        <div class="space-y-6">
+          <!-- 선택된 결제 정보 -->
+          <div v-if="paymentInfo.selectedOption" class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">선택된 결제 정보</h3>
+            <div class="space-y-3">
+              <div class="flex justify-between">
+                <span class="text-gray-600">상품명:</span>
+                <span class="font-medium text-gray-900">{{
+                  paymentInfo.selectedOption.title
+                }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">결제 금액:</span>
+                <span class="font-medium text-gray-900">
+                  ₩{{ paymentInfo.selectedOption.price.toLocaleString() }}
+                  {{ paymentInfo.selectedOption.period || '건당' }}
+                </span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">설명:</span>
+                <span class="font-medium text-gray-900">{{
+                  paymentInfo.selectedOption.description
+                }}</span>
+              </div>
+            </div>
+          </div>
 
-      <!-- 선택된 결제 정보 -->
-      <div v-if="paymentInfo.selectedOption" class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">선택된 결제 정보</h3>
-        <div class="space-y-3">
-          <div class="flex justify-between">
-            <span class="text-gray-600">상품명:</span>
-            <span class="font-medium text-gray-900">{{ paymentInfo.selectedOption.title }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">결제 금액:</span>
-            <span class="font-medium text-gray-900">
-              ₩{{ paymentInfo.selectedOption.price.toLocaleString() }}
-              {{ paymentInfo.selectedOption.period || '건당' }}
-            </span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-600">설명:</span>
-            <span class="font-medium text-gray-900">{{
-              paymentInfo.selectedOption.description
-            }}</span>
+          <!-- 구매자 정보 섹션 -->
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-medium text-gray-900">구매자 정보</h3>
+              <div class="flex items-center space-x-2">
+                <div v-if="buyerInfoLoading" class="flex items-center text-sm text-blue-600">
+                  <svg
+                    class="animate-spin -ml-1 mr-2 h-4 w-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                    ></circle>
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  정보 불러오는 중...
+                </div>
+                <button
+                  v-if="!buyerInfoLoading"
+                  type="button"
+                  @click="loadBuyerInfo"
+                  class="text-sm text-blue-600 hover:text-blue-800 underline"
+                >
+                  정보 새로고침
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- 구매자 이름 -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">구매자 이름</label>
+                <input
+                  type="text"
+                  v-model="paymentInfo.customerName"
+                  :placeholder="buyerInfoLoading ? '정보를 불러오는 중...' : '구매자 이름'"
+                  readonly
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 cursor-not-allowed"
+                />
+              </div>
+
+              <!-- 이메일 -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">이메일</label>
+                <input
+                  type="email"
+                  v-model="paymentInfo.customerEmail"
+                  :placeholder="buyerInfoLoading ? '정보를 불러오는 중...' : '이메일'"
+                  readonly
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 cursor-not-allowed"
+                />
+              </div>
+
+              <!-- 휴대폰 번호 -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">휴대폰 번호</label>
+                <input
+                  type="tel"
+                  v-model="paymentInfo.customerMobilePhone"
+                  :placeholder="buyerInfoLoading ? '정보를 불러오는 중...' : '휴대폰 번호'"
+                  readonly
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 cursor-not-allowed"
+                />
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- 구매자 정보 섹션 -->
-      <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-medium text-gray-900">구매자 정보</h3>
-          <div class="flex items-center space-x-2">
-            <div v-if="buyerInfoLoading" class="flex items-center text-sm text-blue-600">
-              <svg
-                class="animate-spin -ml-1 mr-2 h-4 w-4"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              정보 불러오는 중...
+        <!-- Right: 결제 위젯 + 버튼 + 안내/디버깅 -->
+        <div class="space-y-6">
+          <!-- 토스페이먼츠 위젯 -->
+          <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="space-y-4">
+              <!-- 결제 수단 선택 위젯 -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">결제 수단 선택</label>
+                <div id="payment-method" class="w-full">
+                  <!-- 위젯 로딩 중 또는 실패 시 대체 UI -->
+                  <div v-if="!widgets" class="p-4 bg-gray-50 border border-gray-200 rounded-md">
+                    <p class="text-gray-600 text-sm">토스페이먼츠 위젯을 로딩 중입니다...</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 약관 동의 위젯 -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">약관 동의</label>
+                <div id="agreement" class="w-full">
+                  <!-- 위젯 로딩 중 또는 실패 시 대체 UI -->
+                  <div v-if="!widgets" class="p-4 bg-gray-50 border border-gray-200 rounded-md">
+                    <p class="text-gray-600 text-sm">약관 동의 위젯을 로딩 중입니다...</p>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <!-- 버튼 영역 -->
+          <div class="flex space-x-4">
+            <!-- 뒤로 가기 버튼 -->
             <button
-              v-if="!buyerInfoLoading"
-              type="button"
-              @click="loadBuyerInfo"
-              class="text-sm text-blue-600 hover:text-blue-800 underline"
+              @click="goBack"
+              class="flex-1 bg-gray-500 text-white py-3 px-4 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium transition-colors"
             >
-              정보 새로고침
+              뒤로 가기
+            </button>
+
+            <!-- 결제 버튼 -->
+            <button
+              @click="handlePayment"
+              :disabled="loading || buyerInfoLoading"
+              class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
+            >
+              <span v-if="loading" class="flex items-center justify-center">
+                <svg
+                  class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                결제 처리 중...
+              </span>
+              <span v-else>결제하기</span>
             </button>
           </div>
-        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <!-- 구매자 이름 -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">구매자 이름</label>
-            <input
-              type="text"
-              v-model="paymentInfo.customerName"
-              :placeholder="buyerInfoLoading ? '정보를 불러오는 중...' : '구매자 이름'"
-              readonly
-              class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 cursor-not-allowed"
-            />
-          </div>
-
-          <!-- 이메일 -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">이메일</label>
-            <input
-              type="email"
-              v-model="paymentInfo.customerEmail"
-              :placeholder="buyerInfoLoading ? '정보를 불러오는 중...' : '이메일'"
-              readonly
-              class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 cursor-not-allowed"
-            />
-          </div>
-
-          <!-- 휴대폰 번호 -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">휴대폰 번호</label>
-            <input
-              type="tel"
-              v-model="paymentInfo.customerMobilePhone"
-              :placeholder="buyerInfoLoading ? '정보를 불러오는 중...' : '휴대폰 번호'"
-              readonly
-              class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 cursor-not-allowed"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- 토스페이먼츠 위젯 -->
-      <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div class="space-y-4">
-          <!-- 결제 수단 선택 위젯 -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">결제 수단 선택</label>
-            <div id="payment-method" class="w-full">
-              <!-- 위젯 로딩 중 또는 실패 시 대체 UI -->
-              <div v-if="!widgets" class="p-4 bg-gray-50 border border-gray-200 rounded-md">
-                <p class="text-gray-600 text-sm">토스페이먼츠 위젯을 로딩 중입니다...</p>
+          <!-- 디버깅 정보 (개발용) -->
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h3 class="text-sm font-medium text-yellow-900 mb-2">🔧 디버깅 정보</h3>
+            <div class="text-sm text-yellow-800 space-y-2">
+              <div>
+                <strong>선택된 옵션:</strong> {{ paymentInfo.selectedOption ? '있음' : '없음' }}
               </div>
+              <div>
+                <strong>구매자 정보:</strong>
+                {{ paymentInfo.customerName ? '로드됨' : '로드 안됨' }}
+              </div>
+              <div>
+                <strong>토스페이먼츠 위젯:</strong> {{ widgets ? '초기화됨' : '초기화 안됨' }}
+              </div>
+              <div><strong>현재 URL:</strong> {{ currentUrl }}</div>
             </div>
           </div>
 
-          <!-- 약관 동의 위젯 -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">약관 동의</label>
-            <div id="agreement" class="w-full">
-              <!-- 위젯 로딩 중 또는 실패 시 대체 UI -->
-              <div v-if="!widgets" class="p-4 bg-gray-50 border border-gray-200 rounded-md">
-                <p class="text-gray-600 text-sm">약관 동의 위젯을 로딩 중입니다...</p>
-              </div>
-            </div>
+          <!-- 안내사항 -->
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 class="text-sm font-medium text-blue-900 mb-2">💡 안내사항</h3>
+            <ul class="text-sm text-blue-800 space-y-1">
+              <li>• 구매자 정보(이름, 이메일, 휴대폰 번호)는 백엔드에서 자동으로 불러와집니다.</li>
+              <li>• 구매자 정보는 읽기 전용이며, 수정할 수 없습니다.</li>
+              <li>• 정보가 표시되지 않으면 "정보 새로고침" 버튼을 클릭해주세요.</li>
+              <li>• 이 페이지는 토스페이먼츠 위젯을 사용합니다.</li>
+              <li>• 실제 결제가 이루어지지 않으며, 샌드박스 환경에서 테스트됩니다.</li>
+              <li>• 결제 완료 후 성공/실패 페이지로 리다이렉트됩니다.</li>
+              <li>• 문제가 발생하면 브라우저 개발자 도구(F12)의 콘솔을 확인해주세요.</li>
+              <li>• 토스페이먼츠 페이지가 안 뜨면 위의 디버깅 정보를 확인해주세요.</li>
+            </ul>
           </div>
         </div>
-      </div>
-
-      <!-- 버튼 영역 -->
-      <div class="flex space-x-4">
-        <!-- 뒤로 가기 버튼 -->
-        <button
-          @click="goBack"
-          class="flex-1 bg-gray-500 text-white py-3 px-4 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium transition-colors"
-        >
-          뒤로 가기
-        </button>
-
-        <!-- 결제 버튼 -->
-        <button
-          @click="handlePayment"
-          :disabled="loading || buyerInfoLoading"
-          class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
-        >
-          <span v-if="loading" class="flex items-center justify-center">
-            <svg
-              class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              ></circle>
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            결제 처리 중...
-          </span>
-          <span v-else>결제하기</span>
-        </button>
-      </div>
-
-      <!-- 디버깅 정보 (개발용) -->
-      <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <h3 class="text-sm font-medium text-yellow-900 mb-2">🔧 디버깅 정보</h3>
-        <div class="text-sm text-yellow-800 space-y-2">
-          <div>
-            <strong>선택된 옵션:</strong> {{ paymentInfo.selectedOption ? '있음' : '없음' }}
-          </div>
-          <div>
-            <strong>구매자 정보:</strong> {{ paymentInfo.customerName ? '로드됨' : '로드 안됨' }}
-          </div>
-          <div><strong>토스페이먼츠 위젯:</strong> {{ widgets ? '초기화됨' : '초기화 안됨' }}</div>
-          <div><strong>현재 URL:</strong> {{ currentUrl }}</div>
-        </div>
-      </div>
-
-      <!-- 안내사항 -->
-      <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 class="text-sm font-medium text-blue-900 mb-2">💡 안내사항</h3>
-        <ul class="text-sm text-blue-800 space-y-1">
-          <li>• 구매자 정보(이름, 이메일, 휴대폰 번호)는 백엔드에서 자동으로 불러와집니다.</li>
-          <li>• 구매자 정보는 읽기 전용이며, 수정할 수 없습니다.</li>
-          <li>• 정보가 표시되지 않으면 "정보 새로고침" 버튼을 클릭해주세요.</li>
-          <li>• 이 페이지는 토스페이먼츠 위젯을 사용합니다.</li>
-          <li>• 실제 결제가 이루어지지 않으며, 샌드박스 환경에서 테스트됩니다.</li>
-          <li>• 결제 완료 후 성공/실패 페이지로 리다이렉트됩니다.</li>
-          <li>• 문제가 발생하면 브라우저 개발자 도구(F12)의 콘솔을 확인해주세요.</li>
-          <li>• 토스페이먼츠 페이지가 안 뜨면 위의 디버깅 정보를 확인해주세요.</li>
-        </ul>
       </div>
     </div>
   </div>

@@ -30,6 +30,7 @@ import {
   setPropertyNotification,
   cancelPropertyNotification,
 } from '@/api/property/property.js'
+import { useMembership } from '@/composables/useMembership'
 
 // Props 정의
 const props = defineProps({
@@ -621,6 +622,18 @@ const toggleNotification = async () => {
 
 // 채팅 페이지로 이동
 const goToChat = () => {
+  // 로그인 상태 확인
+  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'
+  if (!isLoggedIn) {
+    // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
+    router.push({
+      path: '/auth/login',
+      query: { redirect: window.location.pathname },
+    })
+    return
+  }
+
+  // 로그인된 경우 채팅 페이지로 이동
   router.push('/chat/list')
 }
 
@@ -651,6 +664,72 @@ const goToReviewWrite = () => {
         selectedProperty.value.buildingName
       )
     }
+  }
+}
+
+// 등기부등본 다운로드 페이지로 이동
+const goToRegistryDownload = async () => {
+  if (selectedProperty.value) {
+    const buildingId = getBuildingIdByName(selectedProperty.value.buildingName)
+    if (buildingId) {
+      // 멤버십 검증
+      const result = await validateMembership({
+        onSuccess: () => {
+          router.push(`/deal/consumer/documents/${buildingId}/registry/download`)
+        },
+        onFailure: (message) => {
+          console.warn('멤버십 검증 실패:', message)
+        },
+      })
+    } else {
+      console.warn(
+        '매물에 대한 buildingId를 찾을 수 없습니다:',
+        selectedProperty.value.buildingName
+      )
+    }
+  }
+}
+
+// 건축물대장 다운로드 페이지로 이동
+const goToBuildingRegisterDownload = async () => {
+  if (selectedProperty.value) {
+    const buildingId = getBuildingIdByName(selectedProperty.value.buildingName)
+    if (buildingId) {
+      // 멤버십 검증
+      const result = await validateMembership({
+        onSuccess: () => {
+          router.push(`/deal/consumer/documents/${buildingId}/building-register/download`)
+        },
+        onFailure: (message) => {
+          console.warn('멤버십 검증 실패:', message)
+        },
+      })
+    } else {
+      console.warn(
+        '매물에 대한 buildingId를 찾을 수 없습니다:',
+        selectedProperty.value.buildingName
+      )
+    }
+  }
+}
+
+// 멤버십 검증 Hook 사용
+const { validateMembership } = useMembership()
+
+// 분석 리포트 다운로드 페이지로 이동
+const goToAnalysisReportDownload = async () => {
+  if (selectedProperty.value) {
+    // 멤버십 검증
+    const result = await validateMembership({
+      onSuccess: () => {
+        // 분석 리포트는 reportId를 사용하므로 임시로 1을 사용
+        const reportId = 1
+        router.push(`/deal/consumer/report/${reportId}/download`)
+      },
+      onFailure: (message) => {
+        console.warn('멤버십 검증 실패:', message)
+      },
+    })
   }
 }
 
@@ -1109,15 +1188,15 @@ onMounted(() => {
         <div class="action-buttons-section">
           <div class="action-buttons">
             <div class="download-buttons-row">
-              <button class="action-btn-download">
+              <button class="action-btn-download" @click="goToRegistryDownload">
                 <span class="btn-icon">▼</span>
                 <span class="btn-text">등기부등본</span>
               </button>
-              <button class="action-btn-download">
+              <button class="action-btn-download" @click="goToBuildingRegisterDownload">
                 <span class="btn-icon">▼</span>
                 <span class="btn-text">건축물대장</span>
               </button>
-              <button class="action-btn-download">
+              <button class="action-btn-download" @click="goToAnalysisReportDownload">
                 <span class="btn-icon">▼</span>
                 <span class="btn-text">분석 리포트</span>
               </button>
@@ -2040,6 +2119,32 @@ onMounted(() => {
 
   .detail-sidebar-left {
     width: 380px;
+  }
+}
+
+/* Desktop enhancements */
+@media (min-width: 1280px) {
+  .sidebar {
+    width: 440px;
+  }
+
+  .detail-sidebar-left {
+    width: 440px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .sidebar {
+    width: 500px;
+  }
+
+  .detail-sidebar-left {
+    width: 500px;
+  }
+
+  .floating-btn {
+    width: 88px;
+    height: 88px;
   }
 }
 </style>

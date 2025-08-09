@@ -50,3 +50,14 @@ export const getBuyerInfo = async () => {
     throw error
   }
 }
+
+// 멤버십 상태 확인
+export const checkMembershipStatus = async () => {
+  try {
+    const response = await axios.get('/membership/status')
+    return response.data
+  } catch (error) {
+    console.error('멤버십 상태 확인 실패:', error)
+    throw error
+  }
+}

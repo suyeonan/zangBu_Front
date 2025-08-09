@@ -100,7 +100,7 @@ const goToPaymentConfirm = (option) => {
 
 <template>
   <div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-4xl mx-auto px-4">
+    <div class="mx-auto px-4 max-w-4xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl">
       <!-- 헤더 -->
       <div class="text-center mb-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-2">결제 옵션</h1>
@@ -218,7 +218,7 @@ const goToPaymentConfirm = (option) => {
       </div>
 
       <!-- 결제 옵션 -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 xl:gap-8 2xl:gap-10">
         <!-- 건당 결제 -->
         <div
           :class="[

@@ -115,9 +115,11 @@ onMounted(async () => {
     </div>
 
     <!-- Main Content -->
-    <div class="flex h-[calc(100vh-80px)]">
+    <div class="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-80px)]">
       <!-- Left Panel: Review List -->
-      <div class="w-1/3 border-r border-gray-200 bg-gray-50 p-6 overflow-y-auto">
+      <div
+        class="w-full lg:w-1/3 xl:w-2/5 border-r border-gray-200 bg-gray-50 p-6 overflow-y-auto max-h-[50vh] lg:max-h-none"
+      >
         <h2 class="text-lg font-bold text-gray-800 mb-4">매물 리뷰 목록 - {{ buildingName }}</h2>
 
         <!-- 테스트 안내 메시지 -->
