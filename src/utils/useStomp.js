@@ -1,5 +1,4 @@
 import { Client } from '@stomp/stompjs'
-import SockJS from 'sockjs-client'
 import { useAuthStore } from '@/stores/auth/auth'
 
 //STOMP 연결을 담당하는 Client 객체
@@ -16,28 +15,21 @@ export function useStomp() {
     const authStore = useAuthStore()
     const token = authStore.accessToken
 
-    stompClient = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8080/ws-stomp'),
+    const client = new Client({
+      brokerURL: 'ws://localhost:8080/chat', // 순수 WS
       reconnectDelay: 5000,
-
-      // JWT를 Authorization 헤더로 포함
       connectHeaders: {
+        // STOMP CONNECT 헤더
         Authorization: `Bearer ${token}`,
       },
-
       onConnect: () => {
         isConnected = true
+        stompClient = client
         console.log('STOMP 연결 성공')
-        onConnectedCallback() //연결 성공 후 구독
-      },
-
-      onStompError: (frame) => {
-        console.error('STOMP 오류:', frame)
+        onConnectedCallback() // 연결 성공 후 콜백 호출
       },
     })
-
-    //실제 연결 시도
-    stompClient.activate()
+    client.activate()
   }
 
   // 특정 방 구독

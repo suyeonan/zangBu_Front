@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>STOMP WebSocket Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- CDN: @stomp/stompjs (UMD) -->
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 800px;
+        margin: 20px auto;
+      }
+      input,
+      button {
+        padding: 8px;
+      }
+      .row {
+        margin: 8px 0;
+        display: flex;
+        gap: 8px;
+      }
+      textarea {
+        width: 100%;
+        height: 140px;
+      }
+      code {
+        background: #f6f6f6;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>STOMP WebSocket Test (순수 WS + CONNECT 헤더 JWT)</h2>
+
+    <div class="row">
+      <label style="width: 120px">WS URL</label>
+      <input id="wsUrl" value="ws://localhost:8080/chat" style="flex: 1" />
+    </div>
+    <div class="row">
+      <label style="width: 120px">JWT</label>
+      <input id="jwt" placeholder="Bearer 없이 토큰만" style="flex: 1" />
+    </div>
+    <div class="row">
+      <button id="btnConnect">Connect</button>
+      <button id="btnDisconnect">Disconnect</button>
+      <span id="status" style="margin-left: 12px; color: #666">DISCONNECTED</span>
+    </div>
+
+    <hr />
+
+    <h3>Subscribe</h3>
+    <div class="row">
+      <input id="subDest" value="/exchange/chat.exchange/chat.room.${roomId}" style="flex: 1" />
+      <button id="btnSub">Subscribe</button>
+      <button id="btnUnsub">Unsubscribe</button>
+    </div>
+    <textarea id="recv" placeholder="수신 메시지 로그" readonly></textarea>
+
+    <h3>Send</h3>
+    <div class="row">
+      <input id="sendDest" value="/app/chat.send/${roomId}" style="flex: 1" />
+    </div>
+    <div class="row">
+      <input id="chatRoomId" placeholder="test-room" />
+      <input id="message" placeholder="메시지" />
+    </div>
+    <div class="row">
+      <button id="btnSend">Send</button>
+    </div>
+
+    <script>
+      let client = null
+      let subscription = null
+
+      const el = (id) => document.getElementById(id)
+      const logRecv = (msg) => {
+        const ta = el('recv')
+        ta.value += `[${new Date().toLocaleTimeString()}] ${msg}\n`
+        ta.scrollTop = ta.scrollHeight
+      }
+
+      function connect() {
+        const url = el('wsUrl').value.trim()
+        const token = el('jwt').value.trim()
+        if (!url) return alert('WS URL 입력')
+        if (!token) return alert('JWT 입력')
+
+        client = new StompJs.Client({
+          brokerURL: url, // 순수 WS
+          reconnectDelay: 3000,
+          connectHeaders: {
+            Authorization: 'Bearer ' + token, // STOMP CONNECT 헤더
+          },
+          onConnect: () => {
+            el('status').textContent = 'CONNECTED'
+            logRecv('CONNECTED')
+          },
+          onStompError: (frame) => {
+            el('status').textContent = 'ERROR'
+            console.error('STOMP ERROR:', frame)
+            logRecv('STOMP ERROR: ' + JSON.stringify(frame.headers || {}))
+          },
+          onWebSocketClose: (evt) => {
+            el('status').textContent = 'CLOSED'
+            logRecv('WebSocket closed')
+          },
+        })
+        client.activate()
+        el('status').textContent = 'CONNECTING...'
+      }
+
+      function disconnect() {
+        if (subscription) {
+          subscription.unsubscribe()
+          subscription = null
+        }
+        if (client) {
+          client.deactivate()
+          client = null
+        }
+        el('status').textContent = 'DISCONNECTED'
+        logRecv('Disconnected')
+      }
+
+      function subscribe() {
+        if (!client || !client.connected) return alert('먼저 Connect')
+        const dest = el('subDest').value.trim()
+        if (!dest) return alert('구독 destination 입력')
+        if (subscription) subscription.unsubscribe()
+        subscription = client.subscribe(dest, (message) => {
+          try {
+            logRecv(`MESSAGE ${dest}: ` + message.body)
+          } catch (e) {
+            logRecv(`MESSAGE ${dest}: [parse error] ` + e)
+          }
+        })
+        logRecv('SUBSCRIBE ' + dest)
+      }
+
+      function unsubscribe() {
+        if (subscription) {
+          subscription.unsubscribe()
+          logRecv('UNSUBSCRIBE')
+          subscription = null
+        }
+      }
+
+      function sendMsg() {
+        if (!client || !client.connected) return alert('먼저 Connect')
+        const dest = el('sendDest').value.trim()
+        const chatRoomId = document.getElementById('chatRoomId').value.trim()
+        const message = document.getElementById('message').value.trim()
+        if (!dest) return alert('보낼 destination 입력')
+
+        client.publish({
+          destination: dest,
+          body: JSON.stringify({
+            chatRoomId: chatRoomId,
+            message: message,
+          }),
+          headers: { 'content-type': 'application/json' },
+        })
+        logRecv(`SEND ${dest}: ${body}`)
+      }
+
+      el('btnConnect').onclick = connect
+      el('btnDisconnect').onclick = disconnect
+      el('btnSub').onclick = subscribe
+      el('btnUnsub').onclick = unsubscribe
+      el('btnSend').onclick = sendMsg
+    </script>
+  </body>
+</html>
