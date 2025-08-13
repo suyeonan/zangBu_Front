@@ -2,14 +2,14 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
-    <title>STOMP WebSocket Test</title>
+    <title>STOMP WebSocket Test – 멀티 구독</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- CDN: @stomp/stompjs (UMD) -->
     <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
     <style>
       body {
         font-family: system-ui, sans-serif;
-        max-width: 800px;
+        max-width: 900px;
         margin: 20px auto;
       }
       input,
@@ -23,17 +23,29 @@
       }
       textarea {
         width: 100%;
-        height: 140px;
+        height: 160px;
       }
-      code {
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+        border-radius: 20px;
+        margin: 4px;
+      }
+      .pill code {
         background: #f6f6f6;
         padding: 2px 6px;
         border-radius: 4px;
       }
+      .muted {
+        color: #666;
+      }
     </style>
   </head>
   <body>
-    <h2>STOMP WebSocket Test (순수 WS + CONNECT 헤더 JWT)</h2>
+    <h2>STOMP WebSocket Test (순수 WS + CONNECT 헤더 JWT / 멀티 구독)</h2>
 
     <div class="row">
       <label style="width: 120px">WS URL</label>
@@ -46,17 +58,22 @@
     <div class="row">
       <button id="btnConnect">Connect</button>
       <button id="btnDisconnect">Disconnect</button>
-      <span id="status" style="margin-left: 12px; color: #666">DISCONNECTED</span>
+      <span id="status" class="muted" style="margin-left: 12px">DISCONNECTED</span>
     </div>
 
     <hr />
 
-    <h3>Subscribe</h3>
+    <h3>Subscribe (다중 구독 가능)</h3>
     <div class="row">
-      <input id="subDest" value="/exchange/chat.exchange/chat.room.${roomId}" style="flex: 1" />
-      <button id="btnSub">Subscribe</button>
-      <button id="btnUnsub">Unsubscribe</button>
+      <input id="subDest" value="/topic/test" style="flex: 1" />
+      <button id="btnSubAdd">Add Subscribe</button>
+      <button id="btnUnsubAll">Unsubscribe All</button>
     </div>
+
+    <div id="subsList" class="muted" style="padding: 6px 0">
+      <!-- 현재 구독 목록이 pill로 표시됨 -->
+    </div>
+
     <textarea id="recv" placeholder="수신 메시지 로그" readonly></textarea>
 
     <h3>Send</h3>
@@ -65,21 +82,41 @@
     </div>
     <div class="row">
       <input id="chatRoomId" placeholder="test-room" />
-      <input id="message" placeholder="메시지" />
-    </div>
-    <div class="row">
+      <input id="message" placeholder="메시지" style="flex: 1" />
       <button id="btnSend">Send</button>
     </div>
 
     <script>
       let client = null
-      let subscription = null
+      // destination -> { sub: StompSubscription, createdAt: Date }
+      const subscriptions = new Map()
 
       const el = (id) => document.getElementById(id)
       const logRecv = (msg) => {
         const ta = el('recv')
         ta.value += `[${new Date().toLocaleTimeString()}] ${msg}\n`
         ta.scrollTop = ta.scrollHeight
+      }
+
+      function renderSubs() {
+        const container = el('subsList')
+        container.innerHTML = ''
+        if (subscriptions.size === 0) {
+          container.textContent = '현재 구독 없음'
+          return
+        }
+        subscriptions.forEach((info, dest) => {
+          const pill = document.createElement('span')
+          pill.className = 'pill'
+          const label = document.createElement('code')
+          label.textContent = dest
+          const btn = document.createElement('button')
+          btn.textContent = 'Unsub'
+          btn.onclick = () => unsubscribeOne(dest)
+          pill.appendChild(label)
+          pill.appendChild(btn)
+          container.appendChild(pill)
+        })
       }
 
       function connect() {
@@ -89,11 +126,11 @@
         if (!token) return alert('JWT 입력')
 
         client = new StompJs.Client({
-          brokerURL: url, // 순수 WS
-          reconnectDelay: 3000,
-          connectHeaders: {
-            Authorization: 'Bearer ' + token, // STOMP CONNECT 헤더
-          },
+          brokerURL: url,
+          reconnectDelay: 0,
+          heartbeatIncoming: 0,
+          heartbeatOutgoing: 0,
+          connectHeaders: { Authorization: 'Bearer ' + token },
           onConnect: () => {
             el('status').textContent = 'CONNECTED'
             logRecv('CONNECTED')
@@ -103,7 +140,7 @@
             console.error('STOMP ERROR:', frame)
             logRecv('STOMP ERROR: ' + JSON.stringify(frame.headers || {}))
           },
-          onWebSocketClose: (evt) => {
+          onWebSocketClose: () => {
             el('status').textContent = 'CLOSED'
             logRecv('WebSocket closed')
           },
@@ -113,10 +150,7 @@
       }
 
       function disconnect() {
-        if (subscription) {
-          subscription.unsubscribe()
-          subscription = null
-        }
+        unsubscribeAll()
         if (client) {
           client.deactivate()
           client = null
@@ -125,51 +159,74 @@
         logRecv('Disconnected')
       }
 
-      function subscribe() {
+      function addSubscribe() {
         if (!client || !client.connected) return alert('먼저 Connect')
         const dest = el('subDest').value.trim()
         if (!dest) return alert('구독 destination 입력')
-        if (subscription) subscription.unsubscribe()
-        subscription = client.subscribe(dest, (message) => {
+
+        if (subscriptions.has(dest)) {
+          logRecv(`이미 구독 중: ${dest}`)
+          return
+        }
+
+        const sub = client.subscribe(dest, (message) => {
           try {
-            logRecv(`MESSAGE ${dest}: ` + message.body)
+            logRecv(`MESSAGE ${dest}: ${message.body}`)
           } catch (e) {
-            logRecv(`MESSAGE ${dest}: [parse error] ` + e)
+            logRecv(`MESSAGE ${dest}: [parse error] ${e}`)
           }
         })
+
+        subscriptions.set(dest, { sub, createdAt: new Date() })
         logRecv('SUBSCRIBE ' + dest)
+        renderSubs()
       }
 
-      function unsubscribe() {
-        if (subscription) {
-          subscription.unsubscribe()
-          logRecv('UNSUBSCRIBE')
-          subscription = null
+      function unsubscribeOne(dest) {
+        const info = subscriptions.get(dest)
+        if (info) {
+          try {
+            info.sub.unsubscribe()
+          } catch {}
+          subscriptions.delete(dest)
+          logRecv('UNSUBSCRIBE ' + dest)
+          renderSubs()
         }
+      }
+
+      function unsubscribeAll() {
+        subscriptions.forEach((info, dest) => {
+          try {
+            info.sub.unsubscribe()
+          } catch {}
+        })
+        subscriptions.clear()
+        renderSubs()
+        logRecv('UNSUBSCRIBE ALL')
       }
 
       function sendMsg() {
         if (!client || !client.connected) return alert('먼저 Connect')
-        const dest = el('sendDest').value.trim()
-        const chatRoomId = document.getElementById('chatRoomId').value.trim()
-        const message = document.getElementById('message').value.trim()
-        if (!dest) return alert('보낼 destination 입력')
+        const destTemplate = el('sendDest').value.trim()
+        const chatRoomId = el('chatRoomId').value.trim()
+        const message = el('message').value.trim()
+        if (!destTemplate) return alert('보낼 destination 입력')
+
+        // 사용자가 표시용으로 가진 템플릿은 그대로 두고, 실제 publish는 roomId를 경로에만 붙임
+        const realDest = `/app/chat.send/${chatRoomId || ''}`
 
         client.publish({
-          destination: dest,
-          body: JSON.stringify({
-            chatRoomId: chatRoomId,
-            message: message,
-          }),
-          headers: { 'content-type': 'application/json' },
+          destination: realDest,
+          body: JSON.stringify({ message }),
+          headers: { 'content-type': 'application/json;charset=UTF-8' },
         })
-        logRecv(`SEND ${dest}: ${body}`)
+        logRecv(`SEND ${realDest} : ${message}`)
       }
 
       el('btnConnect').onclick = connect
       el('btnDisconnect').onclick = disconnect
-      el('btnSub').onclick = subscribe
-      el('btnUnsub').onclick = unsubscribe
+      el('btnSubAdd').onclick = addSubscribe
+      el('btnUnsubAll').onclick = unsubscribeAll
       el('btnSend').onclick = sendMsg
     </script>
   </body>

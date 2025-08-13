@@ -74,8 +74,8 @@
       </header>
 
       <!-- 채팅 내용 -->
-      <main class="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-        <div v-for="(msg, index) in messages" :key="index" class="flex flex-col">
+      <main ref="scrollArea" class="flex-1 overflow-y-auto px-4 py-3 space-y-4" @scroll="onScroll">
+        <div v-for="(msg, index) in viewMessages" :key="index" class="flex flex-col">
           <!-- 말풍선 -->
           <div
             :class="[
@@ -85,7 +85,7 @@
               'rounded-lg px-3 py-2 max-w-xs text-sm',
             ]"
           >
-            <p>{{ msg.text }}</p>
+            <p>{{ msg.message }}</p>
           </div>
 
           <!-- 시간 -->
@@ -97,7 +97,7 @@
               'mt-1',
             ]"
           >
-            {{ msg.time }}
+            {{ msg.createdAt || '' }}
           </p>
         </div>
       </main>
@@ -123,7 +123,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useChatStore } from '@/stores/chat/chat'
 import { useStomp } from '@/utils/useStomp'
@@ -136,59 +136,13 @@ const route = useRoute()
 const router = useRouter()
 const chatStore = useChatStore()
 const authStore = useAuthStore()
-const { markAsRead } = useChatStore()
-const { connect, subscribeRoom, unsubscribeRoom, disconnect } = useStomp()
-const roomId = route.params.roomId // URL 파라미터로부터 채팅방 ID 가져오기
-const myUserId = authStore.userId
+const { connect, subscribeRoom, unsubscribeRoom, disconnect, connected } = useStomp()
+const roomId = computed(() => String(route.params.roomId || ''))
+//const myUserId = computed(() => authStore.userId)
+const myUserId = 'user-001'
 
 //나가기 모달
 const showModal = ref(false)
-
-const handleCancel = () => {
-  //취소 클릭 시
-  console.log('취소됨')
-  showModal.value = false
-}
-
-const handleConfirm = async () => {
-  //나가기 클릭 시
-  console.log('확인됨')
-  try {
-    await chatStore.leaveChatRoom(roomId) // 채팅방 나가기 API 호출
-    showModal.value = false
-    router.push('/chat/list') // 채팅방 목록 페이지로 이동
-  } catch (err) {
-    console.error('채팅방 나가기 실패:', err)
-  }
-}
-
-onMounted(() => {
-  // STOMP 연결
-  connect(() => {
-    // 해당 채팅방 구독
-    subscribeRoom(roomId, (message, subscribedRoomId) => {
-      chatStore.messages.push(message)
-
-      // 내가 보낸 메시지가 아니면 읽음 처리
-      if (message.senderId !== myUserId) {
-        chatStore.markAsRead(subscribedRoomId)
-      }
-    })
-
-    // 채팅방 입장 시 기존 안 읽은 메시지 읽음 처리
-    chatStore.markAsRead(roomId)
-  })
-
-  // 기존 메시지 로드
-  chatStore.getChatMessages(roomId).then(() => {
-    messages.value = chatStore.messages
-  })
-})
-
-onUnmounted(() => {
-  // 화면에서 나가면 stomp 연결 해제(자동으로 구독 해제됨)
-  disconnect()
-})
 
 const isSeller = localStorage.getItem('userRole') === 'SELLER' // 'BUYER' or 'SELLER'
 const isActive = ref(true) // 거래 활성화 toggle
@@ -198,34 +152,114 @@ const otherNickname = '구매자김씨' //대화 상대방 닉네임
 const buildingName = '강남 신축 빌라'
 const sellerType = '집주인' // or '세입자'
 
-// const messages = ref([])   //백엔드 연동 시 사용
-//임의 데이터
-const messages = ref([
-  { text: '안녕하세요 매물에 관심 가져주셔서 감사합니다.', time: '오후 1:00', isMine: false },
-  { text: '안녕하세요! 언제 방문 가능한지 궁금합니다.', time: '오전 11:05', isMine: true },
-  { text: '이번 주말 언제든 가능합니다. 토요일 오후 어때요?', time: '오후 1:10', isMine: false },
-  { text: '토요일 오후 2시 괜찮을까요?', time: '오전 11:15', isMine: true },
-  { text: '네, 좋습니다! 그럼 토요일 오후 2시에 뵙겠습니다.', time: '오후 1:20', isMine: false },
-])
-const hasMore = ref(true)
-const lastMessageId = ref(null) // 가장 오래된 메시지 ID 저장
-const pageSize = 10 //한 번에 불러올 메시지 개수
+const messages = computed(() => chatStore.messages)
+
+// 화면용: 정렬 방향(isMine) 붙이기
+const viewMessages = computed(() =>
+  messages.value.map((m) => ({
+    ...m,
+    //isMine: m.senderId === myUserId.value,
+    isMine: m.senderId === myUserId,
+  }))
+)
+
+const scrollArea = ref(null)
+const isLoadingOlder = ref(false)
+const hasMore = ref(true) // 더 불러올 수 있는지 (서버에서 빈 배열이면 false)
+
+const scrollToBottom = async () => {
+  await nextTick()
+  const el = scrollArea.value
+  if (el) el.scrollTop = el.scrollHeight
+}
+
+// 자동 스크롤(새 메시지 들어오면 아래로)
+watch(
+  () => messages.value.length,
+  async () => {
+    await scrollToBottom()
+  }
+)
+
+const handleCancel = () => {
+  showModal.value = false
+}
+
+const handleConfirm = async () => {
+  try {
+    await chatStore.leaveChatRoom() // 채팅방 나가기 API 호출
+    showModal.value = false
+    router.push('/chat/list') // 채팅방 목록 페이지로 이동
+  } catch (err) {
+    console.error('채팅방 나가기 실패:', err)
+  }
+}
+
+function subscribeCurrentRoom() {
+  if (!connected.value || !roomId.value) return
+  subscribeRoom(roomId.value, (message /*, subscribedRoomId */) => {
+    // 수신 즉시 스토어에 누적
+    chatStore.messages.push(message)
+    // 내가 보낸 게 아니면 읽음 처리
+    //if (message?.senderId && message.senderId !== myUserId.value) {
+    if (message?.senderId && message.senderId !== myUserId) {
+      chatStore.markAsRead()
+    }
+  })
+}
+
+onMounted(async () => {
+  // STOMP 연결 후 구독, 기존 메시지 로드
+  connect(async () => {
+    subscribeCurrentRoom()
+    await chatStore.markAsRead()
+  })
+  // ★ 초기 메시지 로드(최신 → reverse → 아래로 쌓기)
+  const loaded = await chatStore.loadInitialMessages(30)
+  await scrollToBottom()
+  hasMore.value = loaded > 0
+})
+
+// 동일 컴포넌트 내에서 route만 변경될 때를 대비
+watch(
+  () => roomId.value,
+  async (newId, oldId) => {
+    if (oldId) unsubscribeRoom(oldId)
+    if (newId && connected.value) subscribeCurrentRoom()
+    const loaded = await chatStore.loadInitialMessages(30)
+    await scrollToBottom()
+    hasMore.value = loaded > 0
+  }
+)
+
+// ★ 스크롤 핸들러: 위로 당기면 이전 메시지 더 불러오기
+async function onScroll() {
+  const el = scrollArea.value
+  if (!el || isLoadingOlder.value || !hasMore.value) return
+  if (el.scrollTop <= 50) {
+    isLoadingOlder.value = true
+    const prevHeight = el.scrollHeight
+    const prevTop = el.scrollTop
+    const loaded = await chatStore.loadOlderMessages(30)
+    hasMore.value = loaded > 0
+    await nextTick()
+    // 스크롤 위치 보정 (점프 방지)
+    el.scrollTop = el.scrollHeight - prevHeight + prevTop
+    isLoadingOlder.value = false
+  }
+}
+
+onUnmounted(() => {
+  if (roomId.value) unsubscribeRoom(roomId.value)
+  disconnect() // 화면 떠날 때 완전히 끊고 싶으면 유지
+})
 
 const newMessage = ref('')
-
-const sendMessage = () => {
-  if (!newMessage.value.trim()) return
-
-  // 서버로 보낼 메시지 구조
-  const messagePayload = {
-    chatRoomId: roomId,
-    message: newMessage.value,
-  }
-
-  // Pinia store에 정의한 액션으로 메시지 전송(stomp)
-  chatStore.sendMessage(messagePayload)
-
-  //입력창 비우기
+const sendMessage = async () => {
+  const text = newMessage.value.trim()
+  if (!text) return
+  await chatStore.sendMessage(text) // 스토어가 publish & 로컬 목록 반영
   newMessage.value = ''
+  await scrollToBottom() // ← 보낸 즉시 바닥으로
 }
 </script>

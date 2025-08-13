@@ -16,7 +16,7 @@
             :key="tab.type"
             :class="[
               'flex flex-col-reverse items-center cursor-pointer text-[var(--text-1)] transition',
-              tab.type === selectedTab ? 'text-black font-bold' : '',
+              tab.type === filterType ? 'text-black font-bold' : '',
             ]"
             @click="selectTab(tab.type)"
           >
@@ -36,7 +36,7 @@
         <!-- 채팅방 리스트 -->
         <div class="flex flex-col gap-4">
           <div
-            v-for="room in paginatedRooms"
+            v-for="room in rooms"
             :key="room.chatRoomId"
             class="flex items-start bg-[var(--bg-2)] p-4 rounded-lg relative cursor-pointer"
             @click="goToChatRoom(room.chatRoomId)"
@@ -47,14 +47,14 @@
                 backgroundColor: room.type === 'BUY' ? 'var(--brand-3)' : 'var(--brand-2)',
               }"
             >
-              {{ room.sellerNickname.charAt(0) }}
+              {{ room.otherUserNickname.charAt(0) }}
             </div>
 
             <div class="flex-1">
               <div class="flex items-center justify-between text-sm text-[var(--text-2)] mb-1">
                 <div>
                   <div class="flex items-center gap-2">
-                    <span class="font-semibold">{{ room.sellerNickname }}</span>
+                    <span class="font-semibold">{{ room.otherUserNickname }}</span>
                     <div class="flex gap-1">
                       <span class="text-xs px-2 py-1 rounded bg-[var(--brand-3)] text-white">{{
                         room.sellerType
@@ -146,334 +146,165 @@ const chatStore = useChatStore()
 const { connect, subscribeRoom, unsubscribeAll, disconnect } = useStomp()
 const authStore = useAuthStore()
 const router = useRouter()
-const filterType = ref('ALL')
 
-// const chatRooms = ref([]);
-// 임의의 데이터
-const chatRooms = ref([
-  {
-    chatRoomId: 'test-1',
-    sellerNickname: '김민준',
-    sellerType: '집주인',
-    status: '거래 진행 중',
-    buildingName: '강남 모던 아파트',
-    price: 5,
-    lastMessage: '방문 시간 조율 가능합니다. 언제쯤 괜찮으세요?',
-    lastMessageTime: '15:30',
-    unreadCount: 2,
-    type: 'BUY',
-  },
-  {
-    chatRoomId: 'test-2',
-    sellerNickname: '이서연',
-    sellerType: '세입자',
-    status: '완료',
-    buildingName: '분당 가족 주택',
-    price: 3.2,
-    lastMessage: '관심 있으시면 언제든 연락 주세요!',
-    lastMessageTime: '11:15',
-    unreadCount: 0,
-    type: 'SELL',
-  },
-  {
-    chatRoomId: 'test-3',
-    sellerNickname: '박지후',
-    sellerType: '집주인',
-    status: '거래 대기 중',
-    buildingName: '서초 트리플하우스',
-    price: 4.5,
-    lastMessage: '계약 조건 확인했습니다.',
-    lastMessageTime: '10:10',
-    unreadCount: 1,
-    type: 'BUY',
-  },
-  {
-    chatRoomId: 'test-4',
-    sellerNickname: '정은채',
-    sellerType: '세입자',
-    status: '진행 중',
-    buildingName: '송파 타워뷰',
-    price: 3.7,
-    lastMessage: '방문 일정 잡으려면?',
-    lastMessageTime: '09:15',
-    unreadCount: 0,
-    type: 'SELL',
-  },
-  {
-    chatRoomId: 'test-5',
-    sellerNickname: '최정훈',
-    sellerType: '집주인',
-    status: '완료',
-    buildingName: '마포 해링턴',
-    price: 4.2,
-    lastMessage: '수고하셨습니다!',
-    lastMessageTime: '08:45',
-    unreadCount: 0,
-    type: 'SELL',
-  },
-  {
-    chatRoomId: 'test-6',
-    sellerNickname: '홍길동',
-    sellerType: '세입자',
-    status: '거래 대기 중',
-    buildingName: '은평 타운빌',
-    price: 2.3,
-    lastMessage: '언제 보실 수 있으세요?',
-    lastMessageTime: '08:00',
-    unreadCount: 0,
-    type: 'BUY',
-  },
-  {
-    chatRoomId: 'test-7',
-    sellerNickname: '김소현',
-    sellerType: '집주인',
-    status: '완료',
-    buildingName: '용산 스테이트',
-    price: 5.5,
-    lastMessage: '확인 감사합니다!',
-    lastMessageTime: '07:55',
-    unreadCount: 0,
-    type: 'BUY',
-  },
-  {
-    chatRoomId: 'test-8',
-    sellerNickname: '이지훈',
-    sellerType: '세입자',
-    status: '거래 진행 중',
-    buildingName: '신촌 오피스텔',
-    price: 2.9,
-    lastMessage: '지금도 거래 가능한가요?',
-    lastMessageTime: '07:30',
-    unreadCount: 1,
-    type: 'SELL',
-  },
-  {
-    chatRoomId: 'test-9',
-    sellerNickname: '박채린',
-    sellerType: '집주인',
-    status: '거래 대기 중',
-    buildingName: '강서 힐스테이트',
-    price: 4.1,
-    lastMessage: '꼼꼼히 봐주셔서 감사해요.',
-    lastMessageTime: '07:00',
-    unreadCount: 2,
-    type: 'BUY',
-  },
-  {
-    chatRoomId: 'test-10',
-    sellerNickname: '한지민',
-    sellerType: '세입자',
-    status: '완료',
-    buildingName: '노원 센트럴',
-    price: 2.8,
-    lastMessage: '계약 완료됐습니다.',
-    lastMessageTime: '06:50',
-    unreadCount: 0,
-    type: 'SELL',
-  },
-  {
-    chatRoomId: 'test-11',
-    sellerNickname: '고수진',
-    sellerType: '집주인',
-    status: '진행 중',
-    buildingName: '광진 블루힐',
-    price: 3.5,
-    lastMessage: '서류 전달드릴게요.',
-    lastMessageTime: '06:40',
-    unreadCount: 1,
-    type: 'BUY',
-  },
-  {
-    chatRoomId: 'test-12',
-    sellerNickname: '윤도현',
-    sellerType: '세입자',
-    status: '거래 대기 중',
-    buildingName: '중랑 에버타운',
-    price: 3.0,
-    lastMessage: '지금 통화 괜찮을까요?',
-    lastMessageTime: '06:20',
-    unreadCount: 0,
-    type: 'SELL',
-  },
-  {
-    chatRoomId: 'test-13',
-    sellerNickname: '장서연',
-    sellerType: '집주인',
-    status: '진행 중',
-    buildingName: '성동 구름마을',
-    price: 3.7,
-    lastMessage: '네 그렇게 진행하겠습니다.',
-    lastMessageTime: '06:00',
-    unreadCount: 0,
-    type: 'BUY',
-  },
-  {
-    chatRoomId: 'test-14',
-    sellerNickname: '최민호',
-    sellerType: '세입자',
-    status: '완료',
-    buildingName: '강북 산타운',
-    price: 2.4,
-    lastMessage: '계약서 전송 완료했습니다.',
-    lastMessageTime: '05:45',
-    unreadCount: 0,
-    type: 'SELL',
-  },
-  {
-    chatRoomId: 'test-15',
-    sellerNickname: '김연아',
-    sellerType: '집주인',
-    status: '거래 진행 중',
-    buildingName: '잠실 롯데캐슬',
-    price: 6.1,
-    lastMessage: '오늘 오후 시간 되세요?',
-    lastMessageTime: '05:30',
-    unreadCount: 1,
-    type: 'BUY',
-  },
-  {
-    chatRoomId: 'test-16',
-    sellerNickname: '정우성',
-    sellerType: '세입자',
-    status: '진행 중',
-    buildingName: '송파 푸르지오',
-    price: 4.8,
-    lastMessage: '방금 확인했어요!',
-    lastMessageTime: '05:15',
-    unreadCount: 0,
-    type: 'SELL',
-  },
-  {
-    chatRoomId: 'test-17',
-    sellerNickname: '배수지',
-    sellerType: '집주인',
-    status: '완료',
-    buildingName: '동작 파크뷰',
-    price: 3.3,
-    lastMessage: '거래 완료되었습니다.',
-    lastMessageTime: '05:00',
-    unreadCount: 0,
-    type: 'BUY',
-  },
-  {
-    chatRoomId: 'test-18',
-    sellerNickname: '이준기',
-    sellerType: '세입자',
-    status: '거래 진행 중',
-    buildingName: '도봉 드림하우스',
-    price: 2.6,
-    lastMessage: '언제쯤 다시 연락드리면 될까요?',
-    lastMessageTime: '04:40',
-    unreadCount: 1,
-    type: 'SELL',
-  },
-  {
-    chatRoomId: 'test-19',
-    sellerNickname: '문지애',
-    sellerType: '집주인',
-    status: '거래 대기 중',
-    buildingName: '관악 스카이뷰',
-    price: 3.8,
-    lastMessage: '좋은 조건이라 생각합니다.',
-    lastMessageTime: '04:20',
-    unreadCount: 0,
-    type: 'BUY',
-  },
-  {
-    chatRoomId: 'test-20',
-    sellerNickname: '송강',
-    sellerType: '세입자',
-    status: '진행 중',
-    buildingName: '동대문 리버뷰',
-    price: 4.0,
-    lastMessage: '연락 주셔서 감사합니다!',
-    lastMessageTime: '04:00',
-    unreadCount: 0,
-    type: 'SELL',
-  },
-])
+const filterType = ref('ALL') //'ALL', 'BUY', 'SELL'
+const rooms = ref([]) //현재 페이지 방 목록
+const loading = ref(false)
+const errorMsg = ref('')
+const currentPage = ref(1)
+const pageSize = 5
+const totalCount = ref(0)
+const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize)))
 
-//  탭 정보 자동 계산 함수
-const updateTabs = () => {
-  const buyRooms = chatRooms.value.filter((r) => r.type === 'BUY')
-  const sellRooms = chatRooms.value.filter((r) => r.type === 'SELL')
-  const buyUnread = buyRooms.filter((r) => r.unreadCount > 0).length
-  const sellUnread = sellRooms.filter((r) => r.unreadCount > 0).length
-  const allUnread = chatRooms.value.filter((r) => r.unreadCount > 0).length
-
-  tabs.value = [
-    { label: '전체', type: 'ALL', count: chatRooms.value.length, unread: allUnread },
-    { label: '구매', type: 'BUY', count: buyRooms.length, unread: buyUnread },
-    { label: '판매', type: 'SELL', count: sellRooms.length, unread: sellUnread },
-  ]
-}
-
-//  탭 상태, 카운트 업데이트
+//  탭 상태(백엔드에서 내려주면 우선 사용)
 const tabs = ref([
   { label: '전체', type: 'ALL', count: 0, unread: 0 },
   { label: '구매', type: 'BUY', count: 0, unread: 0 },
   { label: '판매', type: 'SELL', count: 0, unread: 0 },
 ])
 
-// 페이지네이션 관련 상태
-const currentPage = ref(1)
-const pageSize = 5
-const totalCount = ref(chatRooms.value.length)
-const totalPages = computed(() => Math.ceil(totalCount.value / pageSize))
+//  탭 계산(백엔드 미제공 시)
+function computeTabsFrom(roomsList) {
+  const buyRooms = roomsList.filter((r) => r.type === 'BUY')
+  const sellRooms = roomsList.filter((r) => r.type === 'SELL')
+  const buyUnread = buyRooms.filter((r) => (r.unreadCount || 0) > 0).length
+  const sellUnread = sellRooms.filter((r) => (r.unreadCount || 0) > 0).length
+  const allUnread = roomsList.filter((r) => (r.unreadCount || 0) > 0).length
 
-// 페이지네이션용 필터링된 채팅방 목록 계산
-const paginatedRooms = computed(() => {
-  const filtered =
-    filterType.value === 'ALL'
-      ? chatRooms.value
-      : chatRooms.value.filter((r) => r.type === filterType.value)
+  tabs.value = [
+    { label: '전체', type: 'ALL', count: roomsList.length, unread: allUnread },
+    { label: '구매', type: 'BUY', count: buyRooms.length, unread: buyUnread },
+    { label: '판매', type: 'SELL', count: sellRooms.length, unread: sellUnread },
+  ]
+}
 
-  totalCount.value = filtered.length // 탭 클릭 시 count 갱신용
-  return filtered.slice((currentPage.value - 1) * pageSize, currentPage.value * pageSize)
-})
+/** ---------------------------
+ * API: 채팅방 목록 조회
+ * 응답 예시:
+ * {
+ *   items: Room[],
+ *   total: number,
+ *   counts: {
+ *     ALL: { count: number, unread: number },
+ *     BUY: { count: number, unread: number },
+ *     SELL:{ count: number, unread: number }
+ *   }
+ * }
+ * -------------------------- */
 
-// 페이지 변경 시
-const changePage = (page) => {
+async function fetchRooms() {
+  loading.value = true
+  errorMsg.value = ''
+  try {
+    const { data } = await axios.get('http://localhost:8080/chat/list', {
+      params: {
+        type: filterType.value, // 'ALL' | 'BUY' | 'SELL'
+        page: currentPage.value, // 1-base 또는 0-base면 서버에 맞춰 수정
+        size: pageSize,
+      },
+    })
+
+    // 호환 처리: items/total/counts가 없을 수도 있으니 안전하게
+    const items = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : []
+    const total = Number.isFinite(data?.total) ? data.total : items.length
+    rooms.value = items
+    totalCount.value = total
+
+    // 탭 카운트 세팅(백엔드 제공 우선)
+    if (data?.counts?.ALL && data?.counts?.BUY && data?.counts?.SELL) {
+      tabs.value = [
+        {
+          label: '전체',
+          type: 'ALL',
+          count: data.counts.ALL.count,
+          unread: data.counts.ALL.unread,
+        },
+        {
+          label: '구매',
+          type: 'BUY',
+          count: data.counts.BUY.count,
+          unread: data.counts.BUY.unread,
+        },
+        {
+          label: '판매',
+          type: 'SELL',
+          count: data.counts.SELL.count,
+          unread: data.counts.SELL.unread,
+        },
+      ]
+    } else {
+      // 서버가 counts를 안 주면 현재 페이지 기준으로 대강 계산(fallback)
+      computeTabsFrom(items)
+    }
+
+    // 방 목록이 바뀌었으므로 구독 재구성
+    resubscribeForCurrentPage()
+  } catch (err) {
+    console.error(err)
+    errorMsg.value = '채팅방 목록을 불러오지 못했습니다.'
+  } finally {
+    loading.value = false
+  }
+}
+
+/** ---------------------------
+ * STOMP: 현재 페이지 방들만 구독
+ * -------------------------- */
+function resubscribeForCurrentPage() {
+  if (!rooms.value?.length) {
+    unsubscribeAll()
+    return
+  }
+  // 기존 구독 해제 후 현재 페이지만 재구독
+  unsubscribeAll()
+  rooms.value.forEach((room) => {
+    subscribeRoom(room.chatRoomId, (message, roomId) => {
+      const target = rooms.value.find((r) => r.chatRoomId === roomId)
+      if (!target) return
+      target.lastMessage = message.message
+      target.lastMessageTime = message.createdAt
+      if (authStore.userId && message.senderId !== authStore.userId) {
+        target.unreadCount = (target.unreadCount || 0) + 1
+      }
+    })
+  })
+}
+
+/** ---------------------------
+ * 탭/페이지 전환
+ * -------------------------- */
+function changePage(page) {
+  if (page < 1 || page > totalPages.value) return
   currentPage.value = page
 }
 
-// 탭 선택 시
-const selectTab = (type) => {
+function selectTab(type) {
+  if (filterType.value === type) return
   filterType.value = type
   currentPage.value = 1
 }
 
-onMounted(() => {
-  // 페이지 로드 시 탭 카운트 갱신
-  updateTabs()
+/** ---------------------------
+ * 라우팅/구독/초기화
+ * -------------------------- */
+const goToChatRoom = (roomId) => {
+  router.push(`/chat/room/${roomId}`)
+}
 
-  // STOMP 연결 후 모든 채팅방 구독
+onMounted(async () => {
+  // STOMP 연결 후 목록 로딩
   connect(() => {
-    chatRooms.value.forEach((room) => {
-      subscribeRoom(room.chatRoomId, (message, roomId) => {
-        // 해당 채팅방 정보 찾아서 업데이트
-        const targetRoom = chatRooms.value.find((r) => r.chatRoomId === roomId)
-        if (targetRoom) {
-          targetRoom.lastMessage = message.message
-          targetRoom.lastMessageTime = message.createdAt
-          // 내가 보낸 메시지가 아니면 unreadCount 증가
-          if (authStore.userId && message.senderId !== authStore.userId) {
-            targetRoom.unreadCount = (targetRoom.unreadCount || 0) + 1
-          }
-        }
-      })
-    })
+    // 연결 성공 콜백에서 목록 조회하면, 구독도 연결 이후에 정확히 붙음
+    fetchRooms()
   })
+})
+
+// 탭/페이지 변경 시 재조회
+watch([filterType, currentPage], () => {
+  fetchRooms()
 })
 
 onBeforeUnmount(() => {
   disconnect()
 })
-
-// watch & 초기 실행
-watch(chatRooms, updateTabs, { immediate: true })
-
-const goToChatRoom = (roomId) => {
-  router.push(`/chat/room/${roomId}`)
-}
 </script>

@@ -24,6 +24,7 @@ import PropertyRegisterView from '@/pages/property/PropertyRegisterView.vue'
 // 채팅 관련 페이지
 import ChatListView from '@/pages/chat/ChatListView.vue'
 import ChatRoomView from '@/pages/chat/ChatRoomView.vue'
+import ChatTest from '@/pages/chat/ChatTest.vue'
 
 // 거래 관련 페이지
 import DealGuideView from '@/pages/deal/DealGuideView.vue'
@@ -102,7 +103,7 @@ const router = createRouter({
     {
       path: '/auth/verify',
       name: 'verify-identity',
-      component: VerifyIdentity
+      component: VerifyIdentity,
     },
     {
       path: '/auth/enter-address',
@@ -123,7 +124,7 @@ const router = createRouter({
         }
         sessionStorage.removeItem('verified')
         next()
-      }
+      },
     },
     {
       path: '/auth/find-id',
@@ -143,7 +144,7 @@ const router = createRouter({
         // 인증이 끝난 경우 verified 상태 초기화
         sessionStorage.removeItem('verified')
         next()
-      }
+      },
     },
 
     // 사용자 관련 라우트
@@ -173,13 +174,18 @@ const router = createRouter({
 
     // 채팅 관련 라우트
     {
+      //채팅 테스트
+      path: '/chat/test',
+      name: 'chat-test',
+      component: ChatTest,
+    },
+    {
       path: '/chat/list',
       name: 'chat-list',
       component: ChatListView,
     },
     {
-      path: '/chat/room',
-      // path: '/chat/room/:roomId',
+      path: '/chat/room/:roomId',
       name: 'chat-room',
       component: ChatRoomView,
     },
@@ -364,7 +370,7 @@ router.beforeEach((to, from, next) => {
       // 로그인되지 않은 경우 로그인 페이지로 리다이렉트 (원래 가려던 페이지 정보 포함)
       next({
         path: '/auth/login',
-        query: { redirect: to.fullPath }
+        query: { redirect: to.fullPath },
       })
       return
     }
