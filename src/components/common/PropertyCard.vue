@@ -14,9 +14,10 @@
     <!-- Property image -->
     <div class="image-container">
       <img
-        :src="property.image_url || '/default-property.jpg'"
+        :src="authenticatedImageUrl || '/default-property.jpg'"
         :alt="property.building_name || 'Property Image'"
         class="property-image"
+        @error="handleImageError"
       />
     </div>
 
@@ -32,7 +33,7 @@
       </div>
 
       <div class="property-info">
-        <span class="property-type-badge">{{ property.property_type || '아파트' }}</span>
+        <span class="property-type-badge">{{ formatPropertyType(property.property_type) }}</span>
         <span class="seller-info">{{ property.seller_nickname || '판매자' }}</span>
       </div>
 
@@ -52,6 +53,7 @@
       <!-- Action buttons -->
       <div class="action-buttons">
         <button @click="handleDetail" class="primary-button">상세 보기</button>
+        <button v-if="showEditButton" @click="handleEdit" class="edit-button">수정</button>
         <button @click="handleDelete" class="secondary-button">삭제</button>
       </div>
     </div>
@@ -59,7 +61,8 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+import { defineProps, defineEmits, ref, onMounted, watch } from 'vue'
+import { createSignedUrl } from '@/utils/ncp-object-storage-service'
 
 const props = defineProps({
   property: {
@@ -83,9 +86,70 @@ const props = defineProps({
       facility: '',
     }),
   },
+  showEditButton: {
+    type: Boolean,
+    default: false,
+  },
 })
 
-const emit = defineEmits(['contact', 'detail', 'delete'])
+const emit = defineEmits(['contact', 'detail', 'delete', 'edit'])
+
+// NCP 인증 관련 상태
+const authenticatedImageUrl = ref(null)
+
+// NCP URL에서 버킷과 오브젝트 이름 추출
+const extractNcpInfo = (url) => {
+  try {
+    const urlObj = new URL(url)
+    if (urlObj.hostname === 'kr.object.ncloudstorage.com') {
+      const pathParts = urlObj.pathname.split('/').filter((part) => part)
+      if (pathParts.length >= 2) {
+        return {
+          bucketName: pathParts[0],
+          objectName: pathParts.slice(1).join('/'),
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to parse NCP URL:', error)
+  }
+  return null
+}
+
+// 이미지 URL 처리
+const processImageUrl = async () => {
+  if (!props.property.image_url) {
+    authenticatedImageUrl.value = null
+    return
+  }
+
+  // NCP Object Storage URL인지 확인
+  if (props.property.image_url.includes('ncloudstorage.com')) {
+    const ncpInfo = extractNcpInfo(props.property.image_url)
+    if (ncpInfo) {
+      try {
+        console.log('Creating signed URL for NCP image:', ncpInfo)
+        // 서명된 URL 생성 (CORS 우회)
+        const signedUrl = createSignedUrl(ncpInfo.bucketName, ncpInfo.objectName)
+        authenticatedImageUrl.value = signedUrl
+        console.log('Successfully created signed URL:', signedUrl)
+      } catch (error) {
+        console.error('Failed to create signed URL:', error)
+        authenticatedImageUrl.value = props.property.image_url
+      }
+    } else {
+      authenticatedImageUrl.value = props.property.image_url
+    }
+  } else {
+    authenticatedImageUrl.value = props.property.image_url
+  }
+}
+
+// 이미지 로드 에러 처리
+const handleImageError = () => {
+  console.warn('Image failed to load:', authenticatedImageUrl.value || props.property.image_url)
+  authenticatedImageUrl.value = null
+}
 
 // Handle detail view
 const handleDetail = () => {
@@ -95,6 +159,11 @@ const handleDetail = () => {
 // Handle delete
 const handleDelete = () => {
   emit('delete', props.property)
+}
+
+// Handle edit
+const handleEdit = () => {
+  emit('edit', props.property)
 }
 
 // Get badge class based on property status
@@ -108,6 +177,38 @@ const getBadgeClass = (saleType) => {
       return 'status-3'
     default:
       return 'status-2' // Default to '전세'
+  }
+}
+
+// 컴포넌트 마운트 시 이미지 URL 처리
+onMounted(() => {
+  processImageUrl()
+})
+
+// 이미지 URL 변경 시 재처리
+watch(
+  () => props.property.image_url,
+  () => {
+    processImageUrl()
+  }
+)
+
+// Format property type to Korean
+const formatPropertyType = (propertyType) => {
+  if (!propertyType) return '아파트'
+
+  const type = propertyType.toLowerCase()
+  switch (type) {
+    case 'apartment':
+      return '아파트'
+    case 'officetel':
+      return '오피스텔'
+    case 'villa':
+      return '빌라'
+    case 'house':
+      return '주택'
+    default:
+      return propertyType // 이미 한글이거나 알 수 없는 타입인 경우 그대로 반환
   }
 }
 
@@ -348,6 +449,25 @@ const formatPrice = (price) => {
 
 .secondary-button:hover {
   background: #fef2f2;
+}
+
+.edit-button {
+  flex: 1;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid var(--brand-3);
+  background: var(--bg-2);
+  cursor: pointer;
+  color: var(--brand-3);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s ease;
+}
+
+.edit-button:hover {
+  background: var(--brand-3);
+  color: var(--text-3);
 }
 
 /* Responsive adjustments */

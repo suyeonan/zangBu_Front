@@ -7,14 +7,6 @@ import PropertyBasicInfoForm from '@/components/property/PropertyBasicInfoForm.v
 import PropertyDetailForm from '@/components/property/PropertyDetailForm.vue'
 import PropertyContactForm from '@/components/property/PropertyContactForm.vue'
 
-// Props 정의
-const props = defineProps({
-  buildingId: {
-    type: [String, Number],
-    default: null,
-  },
-})
-
 const router = useRouter()
 const propertyStore = usePropertyStore()
 const authStore = useAuthStore()
@@ -44,49 +36,6 @@ const extractRoadName = (roadAddress) => {
   return ''
 }
 
-// 수정 모드인지 확인
-const isEditMode = computed(() => !!props.buildingId)
-
-// 수정 모드일 때 기존 데이터 불러오기
-onMounted(async () => {
-  if (isEditMode.value) {
-    try {
-      const result = await propertyStore.getPropertyDetailById(props.buildingId)
-      if (result.success && result.data) {
-        const propertyData = result.data
-
-        // 기존 데이터로 폼 초기화
-        formData.value = {
-          ...formData.value,
-          registrantType: propertyData.sellerType === 'OWNER' ? 'owner' : 'tenant',
-          propertyType:
-            propertyData.saleType === 'TRADING'
-              ? 'sale'
-              : propertyData.saleType === 'CHARTER'
-              ? 'jeonse'
-              : 'monthly',
-          price: propertyData.price ? propertyData.price.toString() : '',
-          deposit: propertyData.deposit ? propertyData.deposit.toString() : '',
-          buildingType: propertyData.propertyType
-            ? propertyData.propertyType.toLowerCase()
-            : 'apartment',
-          buildingName: propertyData.buildingName || '',
-          area: propertyData.size ? propertyData.size.toString() : '',
-          moveInDate: propertyData.moveDate ? propertyData.moveDate.split('T')[0] : '',
-          title: propertyData.infoOneline || '',
-          features: propertyData.facility || '',
-          description: propertyData.infoBuilding || '',
-          contactName: propertyData.contactName || '',
-          contactPhone: propertyData.contactPhone || '',
-        }
-      }
-    } catch (error) {
-      console.error('매물 데이터 불러오기 실패:', error)
-      alert('매물 데이터를 불러오는데 실패했습니다.')
-    }
-  }
-})
-
 // 현재 단계
 const currentStep = ref(1)
 const totalSteps = 4
@@ -97,18 +46,18 @@ const formData = ref({
   registrantType: 'owner', // 'owner' | 'tenant'
 
   // 매물 종류
-  propertyType: 'jeonse', // 'sale' | 'jeonse' | 'monthly' - CHARTER에 맞춰 jeonse로 변경
+  propertyType: 'jeonse', // 'sale' | 'jeonse' | 'monthly'
 
   // 매매가/보증금
-  price: '500000', // 기본값 설정
-  deposit: '0', // 기본값 설정
+  price: '',
+  deposit: '',
 
   // 주민등록번호
   identity: '',
 
   // 부동산 유형
-  buildingType: 'apartment', // 'apartment' | 'officetel' | 'villa' | 'house' - APARTMENT에 맞춰 변경
-  buildingName: '이수브라운스톤', // 기본값 설정
+  buildingType: 'apartment', // 'apartment' | 'officetel' | 'villa' | 'house'
+  buildingName: '',
 
   // 주소
   roadAddress: '',
@@ -124,21 +73,21 @@ const formData = ref({
   bname: '',
 
   // 면적
-  area: '12.5', // 기본값 설정
+  area: '',
 
   // 입주 가능 날짜
-  moveInType: 'date', // 'immediate' | 'date' | 'negotiable' - 날짜 지정으로 변경
-  moveInDate: '2025-09-01', // 기본값 설정
+  moveInType: 'date', // 'immediate' | 'date' | 'negotiable'
+  moveInDate: '',
 
   // 매물 상세
-  title: '역세권', // infoOneline에 맞춰 기본값 설정
-  features: '엘리베이터, 주차장, 보안카메라', // facility에 맞춰 기본값 설정
-  description: '남향 어쩌구저쩌구', // infoBuilding에 맞춰 기본값 설정
+  title: '',
+  features: '',
+  description: '',
   images: [],
 
   // 담당자 정보
-  contactName: '백현빈', // 기본값 설정
-  contactPhone: '010-7511-7975', // 기본값 설정
+  contactName: '',
+  contactPhone: '',
 })
 
 // 숫자에 콤마 추가하는 함수
@@ -235,7 +184,7 @@ const handleSubmit = async () => {
 
   // building 정보 (JSON 문자열로 변환)
   const buildingData = {
-    buildingId: props.buildingId || 1, // URL 파라미터에서 buildingId 가져오기
+    buildingId: 1, // 기본값 설정
     sellerNickname: formData.value.contactName,
     saleType:
       formData.value.propertyType === 'sale'
@@ -301,22 +250,12 @@ const handleSubmit = async () => {
   const identity = (formData.value.identity || '').replace(/[^\d]/g, '')
   formDataToSend.append('identity', identity)
 
-  // 수정 모드인지 등록 모드인지에 따라 다른 API 호출
-  let result
-  if (isEditMode.value) {
-    // 수정 모드: updateProperty 호출
-    result = await propertyStore.updateProperty(formDataToSend)
-  } else {
-    // 등록 모드: createProperty 호출
-    result = await propertyStore.createProperty(formDataToSend)
-  }
+  const result = await propertyStore.createProperty(formDataToSend)
 
-  if (result.success && (result.status === 201 || result.status === 200)) {
+  if (result.success && result.status === 201) {
     // 성공 팝업창 표시
     showSuccessModal.value = true
-    successMessage.value = isEditMode.value
-      ? '매물 수정이 성공했습니다!'
-      : '매물 등록이 성공했습니다!'
+    successMessage.value = '매물 등록이 성공했습니다!'
 
     // 2초 후 마이페이지의 내가 등록한 매물 탭으로 리다이렉트
     setTimeout(() => {
@@ -324,10 +263,7 @@ const handleSubmit = async () => {
       router.push('/user/mypage?tab=registered')
     }, 2000)
   } else {
-    alert(
-      result.message ||
-        (isEditMode.value ? '매물 수정에 실패했습니다.' : '매물 등록에 실패했습니다.')
-    )
+    alert(result.message || '매물 등록에 실패했습니다.')
   }
 }
 
@@ -481,12 +417,7 @@ const stepInfo = computed(() => {
     1: { title: '매물 기본 정보', description: '필수 정보를 입력해주세요.' },
     2: { title: '매물 상세 설명 및 사진', description: '상세 정보와 사진을 추가해주세요.' },
     3: { title: '담당자 정보', description: '연락 가능한 정보를 입력해주세요.' },
-    4: {
-      title: isEditMode.value ? '매물 수정' : '매물 등록',
-      description: isEditMode.value
-        ? '입력한 정보를 확인하고 수정해주세요.'
-        : '입력한 정보를 확인하고 등록해주세요.',
-    },
+    4: { title: '매물 등록', description: '입력한 정보를 확인하고 등록해주세요.' },
   }
   return steps[currentStep.value]
 })
@@ -536,7 +467,7 @@ const handleCancel = () => {
                   <span
                     class="px-2 lg:px-3 py-0.5 lg:py-1 rounded-full text-xs lg:text-sm font-semibold"
                     style="background: var(--brand-3); color: var(--text-3)"
-                    >{{ isEditMode ? '매물 수정' : '매물 등록' }}</span
+                    >매물 등록</span
                   >
                 </div>
                 <h1 class="text-xl lg:text-3xl font-bold mb-2 lg:mb-3" style="color: var(--text-2)">
@@ -838,7 +769,7 @@ const handleCancel = () => {
                       @mouseenter="$event.target.style.background = 'var(--brand-2)'"
                       @mouseleave="$event.target.style.background = 'var(--brand-3)'"
                     >
-                      {{ isEditMode ? '매물 수정하기' : '매물 등록하기' }}
+                      매물 등록하기
                       <svg
                         class="w-5 h-5 lg:w-6 lg:h-6 ml-1"
                         fill="none"

@@ -65,3 +65,8 @@ export const refreshConsumerDocument = (buildingId, type) => {
 export const downloadStandardContract = (dealId) => {
   return api.get(`/deal/consumer/contract/${dealId}/download`)
 }
+
+// 분석 리포트 상세 조회
+export const getAnalysisReport = (reportId) => {
+  return api.get(`/deal/consumer/report/${reportId}`)
+}

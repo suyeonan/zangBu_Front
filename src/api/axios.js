@@ -15,6 +15,12 @@ const processQueue = (error, token = null) => {
   failedQueue = []
 }
 
+// axios 인스턴스에 임시 추가
+api.interceptors.request.use(cfg => {
+  console.log('[API OUT]', cfg.method?.toUpperCase(), cfg.url, cfg.data)
+  return cfg
+})
+
 // 요청 인터셉터
 api.interceptors.request.use(
   (config) => {
@@ -24,8 +30,11 @@ api.interceptors.request.use(
     console.log('요청 헤더:', config.headers)
 
     // reissue/login 에만 Authorization 생략 (logout엔 붙임)
-    const skipAuth = config.url?.includes('/auth/reissue') || config.url?.includes('/auth/login')
-    console.log('인증 생략 여부:', skipAuth)
+    const skipAuth =
+      config.url?.includes('/auth/reissue') ||
+      config.url?.includes('/auth/login') ||
+      config.url?.includes('/codef/captcha') ||
+      config.url?.includes('/codef/secure')
 
     if (!skipAuth) {
       const at = localStorage.getItem('token')

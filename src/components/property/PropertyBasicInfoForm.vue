@@ -12,6 +12,10 @@ import { formatNumber, removeCommas, formatNumberOnly, formatArea } from '@/util
 
 // Props 정의
 const props = defineProps({
+  isEditMode: {
+    type: Boolean,
+    default: false,
+  },
   modelValue: {
     type: Object,
     default: () => ({
@@ -485,23 +489,58 @@ const getDefaultSuggestions = (addressData) => {
 //   return realInfo
 // }
 
-// 건물 일련번호 조회 함수 - API 호출 제거
-// const fetchComplexNo = async (addrSido, addrSigun, addrDong, buildingName) => {
-//   try {
-//     const result = await codefStore.getComplexNo(addrSido, addrSigun, addrDong, buildingName)
+// 건물 일련번호 조회 함수
+const fetchComplexNo = async (addrSido, addrSigun, addrDong, buildingName) => {
+  try {
+    // 건물명에서 공백 제거 (CODEF API 요청 형식에 맞춤)
+    const cleanBuildingName = buildingName.replace(/\s+/g, '')
 
-//     if (result.success) {
-//       console.log('✅ CODEF API 응답:', result.data)
-//       // 건물 일련번호를 폼 데이터에 저장
-//       updateFormData('complexNo', result.data.complexNo)
-//       return result.data.complexNo
-//     } else {
-//       return null
-//     }
-//   } catch (error) {
-//     return null
-//   }
-// }
+    console.log('🔍 CODEF API 건물 일련번호 조회 시작')
+    console.log('📍 원본 건물명:', buildingName)
+    console.log('🧹 공백 제거된 건물명:', cleanBuildingName)
+    console.log('📍 요청 데이터:', {
+      addrSido,
+      addrSigun,
+      addrDong,
+      buildingName: cleanBuildingName,
+    })
+
+    const result = await codefStore.getComplexNo(addrSido, addrSigun, addrDong, cleanBuildingName)
+
+    if (result.success) {
+      console.log('✅ CODEF API 응답 성공:', result.data)
+      console.log('🏢 건물 일련번호 (complexNo):', result.data.complexNo)
+
+      // 현재 폼 데이터 상태 확인
+      console.log('📋 현재 폼 데이터 상태:')
+      console.log(
+        '  🏠 res_type (건물유형):',
+        formData.value.buildingType === 'apartment' ? '아파트' : '단독주택'
+      )
+      console.log('  🏢 complex_name (건물명):', formData.value.buildingName)
+      console.log('  🔢 complex_no (건물일련번호):', result.data.complexNo)
+      console.log('  🗺️ sido (시도):', formData.value.sido)
+      console.log('  🏘️ sigungu (시군구):', formData.value.sigungu)
+      console.log('  📊 si_code (시코드):', formData.value.siCode)
+      console.log('  🏘️ eupmyeondong (읍면동):', formData.value.eupmyeondong)
+      console.log('  📍 address (도로명주소):', formData.value.roadAddress)
+      console.log('  📮 zonecode (우편번호):', formData.value.zonecode)
+      console.log('  📍 bname (법정동):', formData.value.bname)
+      console.log('  🏢 dong (동):', formData.value.buildingDong || '미입력')
+      console.log('  🚪 ho (호수):', formData.value.buildingHo || '미입력')
+
+      // 건물 일련번호를 폼 데이터에 저장
+      updateFormData('complexNo', result.data.complexNo)
+      return result.data.complexNo
+    } else {
+      console.log('❌ CODEF API 응답 실패:', result.error)
+      return null
+    }
+  } catch (error) {
+    console.error('🚫 CODEF API 호출 중 오류:', error)
+    return null
+  }
+}
 
 // 주소 선택 핸들러
 const handleAddressSelected = (addressData) => {
@@ -532,15 +571,29 @@ const handleAddressSelected = (addressData) => {
   // 가공된 주소 필드에 저장
   updateDetailAddress()
 
-  // 건물 일련번호 조회 및 저장 (API 호출 제거)
-  // if (addressData.sido && addressData.sigungu && addressData.bname && addressData.buildingName) {
-  //   fetchComplexNo(
-  //     addressData.sido,
-  //     addressData.sigungu,
-  //     addressData.bname,
-  //     addressData.buildingName
-  //   )
-  // }
+  // 건물 일련번호 조회 및 저장
+  if (addressData.sido && addressData.sigungu && addressData.bname && addressData.buildingName) {
+    console.log('🚀 건물 일련번호 조회 시작')
+    fetchComplexNo(
+      addressData.sido,
+      addressData.sigungu,
+      addressData.bname,
+      addressData.buildingName
+    ).then((complexNo) => {
+      if (complexNo) {
+        console.log('💾 complexNo 저장 완료:', complexNo)
+      } else {
+        console.log('⚠️ complexNo 조회 실패 또는 없음')
+      }
+    })
+  } else {
+    console.log('⚠️ 건물 일련번호 조회를 위한 필수 정보 부족:', {
+      sido: addressData.sido,
+      sigungu: addressData.sigungu,
+      bname: addressData.bname,
+      buildingName: addressData.buildingName,
+    })
+  }
 
   // 부모 컴포넌트에 업데이트 알림
   emit('update:modelValue', { ...formData.value })
@@ -694,11 +747,15 @@ const updateBuildingHo = (value) => {
       />
     </div>
 
-    <!-- 도로명 주소 -->
-    <AddressSearch v-model="formData.roadAddress" @address-selected="handleAddressSelected" />
+    <!-- 도로명 주소 (매물 등록 시에만 표시) -->
+    <AddressSearch
+      v-if="!isEditMode"
+      v-model="formData.roadAddress"
+      @address-selected="handleAddressSelected"
+    />
 
-    <!-- 부동산 유형 -->
-    <div>
+    <!-- 부동산 유형 (매물 등록 시에만 표시) -->
+    <div v-if="!isEditMode">
       <label class="block text-sm font-medium text-text-2 mb-4">부동산 유형</label>
       <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <label
@@ -836,8 +893,8 @@ const updateBuildingHo = (value) => {
       />
     </div>
 
-    <!-- 상세 주소 -->
-    <div>
+    <!-- 상세 주소 (동/호수) - 매물 등록 시에만 표시 -->
+    <div v-if="!isEditMode">
       <label class="block text-sm font-medium text-text-2 mb-3">상세 주소</label>
       <div class="grid grid-cols-2 gap-3">
         <div>
@@ -872,8 +929,8 @@ const updateBuildingHo = (value) => {
     <!-- 전용 면적 -->
     <AreaInput v-model="formData.area" @update:model-value="updateFormData('area', $event)" />
 
-    <!-- 주민등록번호 -->
-    <div>
+    <!-- 주민등록번호 (매물 등록 시에만 표시) -->
+    <div v-if="!isEditMode">
       <label class="block text-sm font-medium text-text-2 mb-3">주민등록번호</label>
       <input
         :value="formData.identity"

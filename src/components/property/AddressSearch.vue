@@ -48,7 +48,7 @@ const openPostcode = () => {
         zonecode: data.zonecode,
         sido: data.sido,
         sigungu: data.sigungu,
-        siCode: data.siCode,
+        siCode: data.sigunguCode,
         eupmyeondong: data.eupmyeondong,
         bname: data.bname,
       }

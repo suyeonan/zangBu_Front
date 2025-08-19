@@ -9,17 +9,17 @@ const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === 'true'
  * @param {Array} properties - 주소와 건물명이 포함된 매물 배열
  * @returns {Promise} 위도, 경도가 포함된 매물 배열
  */
-export const getMapList = async (properties) => {
+export const getMapList = async () => {
   // Mock API 사용
   if (USE_MOCK) {
     console.log('🔧 Mock API 사용 중...')
-    return await getMapListMock(properties)
+    return await getMapListMock([]) // Mock 데이터 함수는 인자 없이 호출하도록 수정 필요
   }
 
   // 실제 API 사용
   try {
     console.log('🌐 실제 API 호출 중...')
-    const response = await api.post('/map/list', properties)
+    const response = await api.get('/map/list')
     return response.data
   } catch (error) {
     console.error('매물 지도 정보 조회 실패:', error)
@@ -27,7 +27,7 @@ export const getMapList = async (properties) => {
     // API 실패 시 Mock으로 대체 (개발 환경에서만)
     if (import.meta.env.DEV) {
       console.log('⚠️ API 실패로 Mock 데이터 사용')
-      return await getMapListMock(properties)
+      return await getMapListMock([])
     }
 
     throw error

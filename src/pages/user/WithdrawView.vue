@@ -63,7 +63,7 @@
 
     <!-- 계정 삭제 완료 표시 -->
     <div v-if="showToast" class="toast-box">
-      <i data-lucide="check-circle" class="w-5 h-5"></i>
+      <i class="fas fa-check-circle text-green-600 text-base mr-1" aria-hidden="true"></i>
       <span class="text-sm">{{ toastMessage }}</span>
     </div>
   </div>

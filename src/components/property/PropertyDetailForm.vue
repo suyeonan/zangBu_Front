@@ -4,6 +4,10 @@ import Input from '@/components/common/Input.vue'
 
 // Props 정의
 const props = defineProps({
+  isEditMode: {
+    type: Boolean,
+    default: false,
+  },
   modelValue: {
     type: Object,
     default: () => ({
@@ -174,8 +178,8 @@ const handleImageError = (event) => {
       </p>
     </div>
 
-    <!-- 매물 사진 -->
-    <div>
+    <!-- 매물 사진 (매물 등록 시에만 표시) -->
+    <div v-if="!isEditMode">
       <label class="block text-sm font-medium text-text-2 mb-3">매물 사진</label>
       <div class="border-2 border-dashed border-bg-1 rounded-lg p-8 text-center">
         <i class="fa-solid fa-camera text-3xl text-text-1 mb-4"></i>

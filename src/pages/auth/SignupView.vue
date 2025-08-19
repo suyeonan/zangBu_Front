@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { checkEmail, checkNickname } from '@/api/auth/auth'
+import { checkEmail, checkNickname, signup } from '@/api/auth/auth'
 
 const router = useRouter()
 
@@ -42,6 +42,7 @@ const confirmPassword = ref('')
 // 로딩/결과 상태
 const isCheckingEmail = ref(false)
 const isCheckingNick = ref(false)
+const isSubmitting = ref(false)
 
 const emailOk = ref(null) // null | true | false
 const nickOk = ref(null)
@@ -116,7 +117,6 @@ async function onCheckNickname() {
   }
 }
 
-// 회원가입 제출
 async function submitSignup() {
   // 1) 필수값
   if (!email.value || !nickname.value || !password.value || !confirmPassword.value) {
@@ -141,7 +141,7 @@ async function submitSignup() {
     alert('필수 약관에 모두 동의해주세요.')
     return
   }
-  // 4) 마케팅 수신 동의 선택 여부
+  // 4) 마케팅 수신 동의 여부
   if (consentNotification.value === null) {
     alert('마케팅 알림 수신 동의를 선택해주세요.')
     return
@@ -156,11 +156,44 @@ async function submitSignup() {
     return
   }
 
-  // TODO: 실제 회원가입 API 연동 자리
-  // await signUp({ email: email.value, nickname: nickname.value, password: password.value, ... })
+  const sessionId = sessionStorage.getItem('verifySessionId')
+  if (!sessionId) {
+    alert('본인인증이 만료되었거나 수행되지 않았습니다. 다시 인증해주세요.')
+    return
+  }
 
-  alert('검증 완료! (회원가입 API 연동 지점)')
-  router.push('/') // 임시 이동
+  const payload = {
+    email: email.value.trim(),
+    nickname: nickname.value.trim(),
+    password: password.value,
+    sessionId,
+  }
+
+  isSubmitting.value = true
+  try {
+    await signup(payload)
+    // 성공 시 본인인증 세션은 서버에서 삭제됨
+    sessionStorage.removeItem('verifySessionId')
+    sessionStorage.removeItem('verified')
+    alert('회원가입이 완료되었습니다. 로그인해 주세요.')
+    router.push('/auth/login')
+  } catch (err) {
+    const status = err?.response?.status
+    const msg =
+      err?.response?.data?.message ||
+      err?.response?.data ||
+      err?.message ||
+      '회원가입 중 오류가 발생했습니다.'
+    alert(msg)
+    // 만료/부재 케이스 핸들링
+    if (status === 400 || status === 409) {
+      // 400: 세션 ID 없음/요청값 오류, 409: 중복 등
+    } else if (status === 500) {
+      // 서버 처리 오류
+    }
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 

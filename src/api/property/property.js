@@ -10,6 +10,11 @@ export const getPropertyDetailById = (buildingId) => {
   return api.get(`/building/${buildingId}`)
 }
 
+// 매물 상세보기 (맵에서 사용하는 엔드포인트)
+export const getPropertyDetailForMap = (buildingId) => {
+  return api.get(`/map/apt/${buildingId}`)
+}
+
 // 매물 상세보기 + 공공데이터 통합 조회 (사진의 매물 정보에 표시되는 모든 정보 포함)
 export const getPropertyDetailWithPublicData = (buildingId) => {
   return api.get(`/building/${buildingId}/detail-with-publicdata`)
@@ -62,13 +67,10 @@ export const deleteProperty = (buildingId) => {
 
 // 매물 수정
 export const updateProperty = (data) => {
-  const config =
-    data instanceof FormData
-      ? {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      : {}
-  return api.put('/building/update', data, config)
+  return api.patch('/building/update', data)
+}
+
+// 내가 등록한 매물 목록 조회
+export const getMyProperties = () => {
+  return api.get('/member/mypage/myBuildings')
 }

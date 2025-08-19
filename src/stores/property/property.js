@@ -9,6 +9,7 @@ import {
   deleteProperty as deletePropertyApi,
   bookmarkProperty as bookmarkPropertyApi,
   cancelBookmarkProperty as cancelBookmarkPropertyApi,
+  getMyProperties as getMyPropertiesApi,
 } from '@/api/property/property'
 
 export const usePropertyStore = defineStore('property', () => {
@@ -140,6 +141,24 @@ export const usePropertyStore = defineStore('property', () => {
     }
   }
 
+  // 내가 등록한 매물 목록 조회
+  async function fetchMyProperties() {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await getMyPropertiesApi()
+      return { success: true, data: response.data, status: response.status }
+    } catch (err) {
+      error.value = err
+      return {
+        success: false,
+        message: err.response?.data?.message || '내 매물 목록을 불러오는데 실패했습니다.',
+      }
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     properties,
     currentProperty,
@@ -155,5 +174,6 @@ export const usePropertyStore = defineStore('property', () => {
     setFilters,
     fetchProperty,
     updateProperty,
+    fetchMyProperties,
   }
 })

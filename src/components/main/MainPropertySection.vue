@@ -70,19 +70,8 @@ const handleBookmark = async (bookmarkData) => {
 
 // 카드 클릭 처리
 const handleCardClick = (property) => {
-  // MapView로 이동하면서 매물 상세 정보 조회를 위한 파라미터 전달
-  const queryParams = {
-    buildingId: property.buildingId,
-    searchGbn: '1',
-    complexNo: property.complexNo || '', // property에 complexNo가 있다면 사용
-    dong: '',
-    ho: '',
-  }
-
-  router.push({
-    path: '/map',
-    query: queryParams,
-  })
+  // MapView의 매물 상세 페이지로 직접 이동
+  router.push(`/map/apt/${property.buildingId}`)
 }
 
 // 빈 상태 제목 반환
@@ -131,7 +120,9 @@ const getIconType = () => {
   <section class="py-8">
     <div class="max-w-7xl mx-auto px-4">
       <h2 class="text-2xl font-bold text-gray-800 mb-6">{{ title }}</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div
+        class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 justify-items-center"
+      >
         <template v-if="processedProperties.length > 0">
           <PropertyCardMain
             v-for="property in processedProperties"
@@ -154,3 +145,19 @@ const getIconType = () => {
     </div>
   </section>
 </template>
+
+<style scoped>
+/* 특정 구간에서의 카드 간격 최적화 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .grid {
+    gap: 1.25rem; /* 더 작은 간격 적용 */
+  }
+}
+
+@media (min-width: 800px) and (max-width: 860px) {
+  .grid {
+    gap: 1rem; /* 813-849px 구간에서 더욱 조밀한 간격 */
+    padding: 0 0.5rem;
+  }
+}
+</style>

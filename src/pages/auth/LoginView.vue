@@ -110,7 +110,9 @@ async function login() {
         <div class="link-container">
           <router-link to="/auth/find-id" class="link">아이디 찾기</router-link>
           <span class="separator">|</span>
-          <router-link to="/auth/find-password" class="link">비밀번호 찾기</router-link>
+          <router-link :to="{ path: '/auth/verify', query: { mode: 'password' } }" class="link">
+            비밀번호 찾기
+          </router-link>
         </div>
 
         <!-- 회원가입 링크 -->

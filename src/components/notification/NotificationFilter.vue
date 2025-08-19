@@ -8,7 +8,8 @@
       @click="set(f.key)"
     >
       {{ f.label }}
-      <span v-if="counts[f.key] > 0"> ({{ counts[f.key] }}) </span>
+      <!-- 읽지 않은 개수 -->
+      <span v-if="unreadCounts[f.key] > 0"> ({{ unreadCounts[f.key] }}) </span>
     </div>
   </div>
 </template>
@@ -18,7 +19,7 @@ import { storeToRefs } from 'pinia'
 import { useNotificationStore } from '@/stores/notification/notification'
 
 const store = useNotificationStore()
-const { activeFilter, counts } = storeToRefs(store)
+const { activeFilter, unreadCounts } = storeToRefs(store)
 const filters = store.filters
 
 function set(key) {

@@ -31,7 +31,12 @@ import {
   setPropertyNotification,
   cancelPropertyNotification,
 } from '@/api/property/property.js'
-import { getAptTrades } from '@/api/publicdata/publicdata.js'
+import {
+  getAptTrades,
+  getCompleteAptInfo,
+  getPropertyInfoByBuildingId,
+  getAptTradeInfo,
+} from '@/api/publicdata/publicdata.js'
 import { useMembership } from '@/composables/useMembership'
 import { useChatStore } from '@/stores/chat/chat'
 import { useAuthStore } from '@/stores/auth/auth'
@@ -51,6 +56,7 @@ const router = useRouter()
 const route = useRoute()
 const chatStore = useChatStore()
 const authStore = useAuthStore()
+const codefStore = useCodefStore()
 
 // 상세 보기 상태
 const showDetail = ref(false)
@@ -82,147 +88,39 @@ const initMap = () => {
   }
 }
 
-// 마커 생성 및 표시
-const displayMarkers = (mapData) => {
+// 주소-좌표 변환 객체
+let geocoder = null
+
+// 마커 생성 및 표시 (주소 기반)
+const displayMarkersFromAddresses = (properties) => {
+  if (!window.kakao || !map.value) return
+  if (!geocoder) {
+    geocoder = new window.kakao.maps.services.Geocoder()
+  }
+
   // 기존 마커 제거
   markers.value.forEach((marker) => marker.setMap(null))
   markers.value = []
 
-  mapData.forEach((property) => {
-    const position = new window.kakao.maps.LatLng(property.lat, property.lng)
+  properties.forEach((property) => {
+    geocoder.addressSearch(property.address, (result, status) => {
+      if (status === window.kakao.maps.services.Status.OK) {
+        const coords = new window.kakao.maps.LatLng(result[0].y, result[0].x)
 
-    // 마커 생성
-    const marker = new window.kakao.maps.Marker({
-      position: position,
-      map: map.value,
+        // 마커 생성
+        const marker = new window.kakao.maps.Marker({
+          position: coords,
+          map: map.value,
+        })
+
+        // 여기에 기존의 인포윈도우 생성 및 이벤트 핸들링 로직을 추가할 수 있습니다.
+        // ... (infowindow logic from the old displayMarkers)
+
+        markers.value.push(marker)
+      } else {
+        console.warn(`주소 변환 실패: ${property.address}`)
+      }
     })
-
-    // 인포윈도우 생성
-    const infoWindow = new window.kakao.maps.InfoWindow({
-      content: `
-        <div style="padding: 10px; min-width: 200px; position: relative;">
-          <button
-            id="closeBtn_${property.buildingName.replace(/\s+/g, '_')}"
-            style="
-              position: absolute;
-              top: 5px;
-              right: 5px;
-              background: none;
-              border: none;
-              font-size: 16px;
-              cursor: pointer;
-              color: #999;
-              padding: 2px 6px;
-              border-radius: 3px;
-              line-height: 1;
-              z-index: 1000;
-            "
-            title="닫기"
-          >
-            ×
-          </button>
-          <h4 style="margin: 0 0 5px 0; font-size: 14px; font-weight: bold; padding-right: 20px;">
-            ${property.buildingName}
-          </h4>
-          <p style="margin: 0; font-size: 12px; color: #666;">
-            ${property.address}
-          </p>
-          <p style="margin: 3px 0; font-size: 11px; color: #888;">
-            ${property.propertyType} | ${property.saleType}
-          </p>
-          <p style="margin: 5px 0 0 0; font-size: 13px; color: #007bff; font-weight: bold;">
-            ${generatePropertyInfo(property)}
-          </p>
-          <button
-            id="detailBtn_${property.buildingName.replace(/\s+/g, '_')}"
-            style="
-              width: 100%;
-              margin-top: 8px;
-              padding: 6px 12px;
-              background: #4caf50;
-              color: white;
-              border: none;
-              border-radius: 4px;
-              font-size: 12px;
-              cursor: pointer;
-              transition: background-color 0.2s;
-            "
-            title="상세 보기"
-          >
-            상세 보기
-          </button>
-        </div>
-      `,
-    })
-
-    // 마커 클릭 이벤트
-    window.kakao.maps.event.addListener(marker, 'click', () => {
-      // 다른 인포윈도우들 닫기
-      markers.value.forEach((otherMarker) => {
-        if (otherMarker.infoWindow && otherMarker.infoWindow !== infoWindow) {
-          otherMarker.infoWindow.close()
-        }
-      })
-
-      infoWindow.open(map.value, marker)
-
-      // 닫기 버튼 이벤트 리스너 추가
-      setTimeout(() => {
-        const closeBtn = document.getElementById(
-          `closeBtn_${property.buildingName.replace(/\s+/g, '_')}`
-        )
-        if (closeBtn) {
-          // 이벤트 리스너 제거 후 다시 추가
-          const newCloseBtn = closeBtn.cloneNode(true)
-          closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn)
-
-          newCloseBtn.addEventListener('click', (e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            infoWindow.close()
-          })
-
-          // 호버 효과 추가
-          newCloseBtn.addEventListener('mouseover', () => {
-            newCloseBtn.style.color = '#666'
-            newCloseBtn.style.backgroundColor = '#f0f0f0'
-          })
-
-          newCloseBtn.addEventListener('mouseout', () => {
-            newCloseBtn.style.color = '#999'
-            newCloseBtn.style.backgroundColor = 'transparent'
-          })
-
-          // 상세 보기 버튼 이벤트 리스너 추가
-          const detailBtn = document.getElementById(
-            `detailBtn_${property.buildingName.replace(/\s+/g, '_')}`
-          )
-          if (detailBtn) {
-            const newDetailBtn = detailBtn.cloneNode(true)
-            detailBtn.parentNode.replaceChild(newDetailBtn, detailBtn)
-
-            newDetailBtn.addEventListener('click', (e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              showPropertyDetail(property)
-            })
-
-            // 호버 효과 추가
-            newDetailBtn.addEventListener('mouseover', () => {
-              newDetailBtn.style.backgroundColor = '#45a049'
-            })
-
-            newDetailBtn.addEventListener('mouseout', () => {
-              newDetailBtn.style.backgroundColor = '#4caf50'
-            })
-          }
-        }
-      }, 100)
-    })
-
-    // 인포윈도우를 마커에 저장
-    marker.infoWindow = infoWindow
-    markers.value.push(marker)
   })
 }
 
@@ -253,152 +151,76 @@ const formatPrice = (price) => {
   }
 }
 
-// 샘플 매물 데이터 (필터링 테스트용)
-const sampleProperties = [
-  // 매매 매물들
-  {
-    address: '서울특별시 강남구 테헤란로 123',
-    buildingName: '래미안파크 스위트',
-    buildingId: 1,
-    saleType: '매매',
-    propertyType: '아파트',
-    price: 1500000000,
-    deposit: 0,
-    isBookmarked: false,
-    isNotification: false,
-  },
-  {
-    address: '서울특별시 마포구 양화로 45',
-    buildingName: '홍익타워',
-    buildingId: 2,
-    saleType: '매매',
-    propertyType: '오피스텔',
-    price: 800000000,
-    deposit: 0,
-    isBookmarked: false,
-    isNotification: false,
-  },
-  {
-    address: '서울특별시 종로구 종로 1',
-    buildingName: '종로타워',
-    buildingId: 3,
-    saleType: '매매',
-    propertyType: '아파트',
-    price: 1200000000,
-    deposit: 0,
-    isBookmarked: true,
-    isNotification: true,
-  },
+// 🆕 실제 공공데이터를 사용하여 매물 정보를 가져오는 함수
+const loadPropertyWithPublicData = async (buildingId) => {
+  try {
+    console.log('🏠 매물 ID로 공공데이터 조회 중...', buildingId)
 
-  // 전세 매물들
-  {
-    address: '서울특별시 영등포구 여의대로 108',
-    buildingName: '파크원타워',
-    buildingId: 4,
-    saleType: '전세',
-    propertyType: '아파트',
-    price: 0,
-    deposit: 500000000,
-    isBookmarked: false,
-    isNotification: false,
-  },
-  {
-    address: '서울특별시 광진구 구의동',
-    buildingName: '구의건내2 아파트',
-    buildingId: 5,
-    saleType: '전세',
-    propertyType: '아파트',
-    price: 0,
-    deposit: 300000000,
-    isBookmarked: false,
-    isNotification: false,
-  },
-  {
-    address: '서울특별시 강남구 역삼동',
-    buildingName: '역삼동 아파트',
-    buildingId: 6,
-    saleType: '전세',
-    propertyType: '아파트',
-    price: 0,
-    deposit: 400000000,
-    isBookmarked: false,
-    isNotification: false,
-  },
+    // 1. 매물 기본 정보 조회
+    const propertyInfo = await getPropertyInfoByBuildingId(buildingId)
 
-  // 월세 매물들
-  {
-    address: '서울특별시 서초구 서초동',
-    buildingName: '서초동 빌라',
-    buildingId: 7,
-    saleType: '월세',
-    propertyType: '빌라',
-    price: 50000000,
-    deposit: 10000000,
-    isBookmarked: false,
-    isNotification: false,
-  },
-  {
-    address: '서울특별시 마포구 합정동',
-    buildingName: '합정동 오피스텔',
-    buildingId: 8,
-    saleType: '월세',
-    propertyType: '오피스텔',
-    price: 80000000,
-    deposit: 5000000,
-    isBookmarked: false,
-    isNotification: false,
-  },
-  {
-    address: '서울특별시 강남구 청담동',
-    buildingName: '청담동 주택',
-    buildingId: 9,
-    saleType: '월세',
-    propertyType: '주택',
-    price: 120000000,
-    deposit: 20000000,
-    isBookmarked: false,
-    isNotification: false,
-  },
+    if (propertyInfo.success) {
+      console.log('✅ 공공데이터 조회 성공:', propertyInfo)
 
-  // 추가 매물들 (다양한 조합)
-  {
-    address: '서울특별시 송파구 잠실동',
-    buildingName: '잠실 아파트',
-    buildingId: 10,
-    saleType: '매매',
-    propertyType: '아파트',
-    price: 2000000000,
-    deposit: 0,
-    isBookmarked: false,
-    isNotification: false,
-  },
-  {
-    address: '서울특별시 성동구 성수동',
-    buildingName: '성수동 오피스텔',
-    buildingId: 11,
-    saleType: '전세',
-    propertyType: '오피스텔',
-    price: 0,
-    deposit: 200000000,
-    isBookmarked: false,
-    isNotification: false,
-  },
-  {
-    address: '서울특별시 용산구 이태원동',
-    buildingName: '이태원 빌라',
-    buildingId: 12,
-    saleType: '월세',
-    propertyType: '빌라',
-    price: 30000000,
-    deposit: 15000000,
-    isBookmarked: false,
-    isNotification: false,
-  },
-]
+      // 2. 공공데이터로 매물 정보 업데이트
+      const updatedProperty = {
+        buildingId: buildingId,
+        address: propertyInfo.address || '주소 정보 없음',
+        buildingName: propertyInfo.complexName || '건물명 정보 없음',
+        saleType: '정보 없음', // 공공데이터에서 제공하지 않는 정보
+        propertyType: '아파트', // 기본값
+        price: 0, // 공공데이터에서 제공하지 않는 정보
+        deposit: 0,
+        isBookmarked: false,
+        isNotification: false,
+
+        // 🆕 공공데이터에서 가져온 정보들
+        publicData: {
+          area: propertyInfo.areaDisplay || '84.5m²', // 면적
+          floorInfo: propertyInfo.floorInfo || '지하 3층 ~ 지상 25층', // 층수
+          detailedAddress: propertyInfo.detailedAddress || '101동 1001호', // 상세주소
+          heatingType: propertyInfo.heatingType || '지역난방', // 난방
+          completionDate: propertyInfo.completionDate || '2019년 12월', // 준공일자
+          unitCount: propertyInfo.unitCount || '1200세대', // 세대수
+          complexPk: propertyInfo.complexPk, // 단지 고유번호
+          dongName: propertyInfo.dongName, // 동명
+        },
+      }
+
+      return updatedProperty
+    } else {
+      console.error('❌ 공공데이터 조회 실패:', propertyInfo.message)
+      return null
+    }
+  } catch (error) {
+    console.error('❌ 공공데이터 조회 중 오류:', error)
+    return null
+  }
+}
+
+// 🆕 주소로 공공데이터 조회하는 함수
+const loadPublicDataByAddress = async (address) => {
+  try {
+    console.log('🌐 주소로 공공데이터 조회 중...', address)
+
+    const publicData = await getCompleteAptInfo(address)
+
+    if (publicData.success) {
+      console.log('✅ 공공데이터 조회 성공:', publicData)
+      return publicData
+    } else {
+      console.error('❌ 공공데이터 조회 실패:', publicData.message)
+      return null
+    }
+  } catch (error) {
+    console.error('❌ 공공데이터 조회 중 오류:', error)
+    return null
+  }
+}
 
 // 매물명을 buildingId로 매핑하는 함수
 const getBuildingIdByName = (buildingName) => {
-  const property = sampleProperties.find((p) => p.buildingName === buildingName)
+  const property = mapStore.properties.find((p) => p.buildingName === buildingName)
   const buildingId = property ? property.buildingId : null
 
   // 디버깅용 로그
@@ -410,12 +232,9 @@ const getBuildingIdByName = (buildingName) => {
 // 매물 데이터 로드
 const loadProperties = async () => {
   try {
-    // 초기 로드 시에는 필터링 없이 전체 매물 표시
-    const mapData = await mapStore.fetchProperties(sampleProperties)
-    displayMarkers(mapData)
-
-    // 필터링된 매물도 초기화
-    mapStore.filteredProperties = mapData
+    const propertiesFromApi = await mapStore.fetchProperties()
+    displayMarkersFromAddresses(propertiesFromApi)
+    mapStore.properties = propertiesFromApi
   } catch (error) {
     alert('매물을 불러오는데 실패했습니다.')
   }
@@ -425,7 +244,7 @@ const loadProperties = async () => {
 const applyFilters = async () => {
   try {
     await mapStore.fetchFilteredProperties()
-    displayMarkers(filteredProperties.value)
+    displayMarkersFromAddresses(filteredProperties.value)
   } catch (error) {
     console.error('필터 적용 실패:', error)
     alert('필터를 적용하는데 실패했습니다.')
@@ -525,7 +344,7 @@ const increaseMaxPrice = () => {
 const resetFilters = async () => {
   try {
     await mapStore.resetFilters()
-    displayMarkers(filteredProperties.value)
+    displayMarkersFromAddresses(filteredProperties.value)
   } catch (error) {
     console.error('필터 초기화 실패:', error)
     alert('필터를 초기화하는데 실패했습니다.')
@@ -628,55 +447,44 @@ const fetchRealEstateData = async (propertyData) => {
 // 매물 상세 정보 + 공공데이터 통합 조회
 const fetchPropertyDetailWithPublicData = async (buildingId) => {
   try {
-    console.log('매물 상세 정보 + 공공데이터 통합 조회 시작:', buildingId)
-    const response = await getPropertyDetailWithPublicData(buildingId)
-    console.log('공공데이터 통합 API 응답:', response)
+    console.log('CODEF API로 매물 상세 정보 조회 시작:', buildingId)
+    const result = await codefStore.fetchComplexDetailByBuildingId(buildingId)
 
-    if (response && response.data) {
-      const data = response.data
+    if (result.success && result.data) {
+      const codefData = result.data.data // { estateDetail: {...}, marketPrice: {...} }
+      console.log('CODEF API 응답 데이터:', codefData)
 
-      // 기본 매물 정보 설정
+      const estate = codefData.estateDetail || {}
+      const market = codefData.marketPrice || {}
+
+      // Codef 응답 데이터를 selectedProperty 형식에 맞게 매핑
       const propertyData = {
-        ...data.buildingDetail,
-        isBookmarked: data.buildingDetail.isBookmarked ?? false,
-        isNotification: data.buildingDetail.isNotification ?? false,
-        publicDataAvailable: data.publicDataAvailable,
-        aptComplexInfo: data.aptComplexInfo,
-        errorMessage: data.errorMessage,
+        buildingId: buildingId,
+        address: estate.commAddrRoadName || '주소 정보 없음',
+        buildingName: estate.resComplexName || '건물명 정보 없음',
+        dataSource: 'codef_api',
+
+        // estateDetail (단지 상세 정보)
+        estateDetail: estate,
+
+        // marketPrice (시세 정보)
+        marketPrice: market,
       }
 
       selectedProperty.value = propertyData
       showDetail.value = true
-
-      // 공공데이터가 사용 가능한 경우 추가 정보 표시
-      if (data.publicDataAvailable && data.aptComplexInfo) {
-        console.log('공공데이터 정보:', data.aptComplexInfo)
-      }
-
-      // 실거래가 정보도 함께 불러오기
-      await fetchRealEstateData(propertyData)
     } else {
-      console.warn('공공데이터 통합 API에서 데이터가 없습니다.')
-      // API에서 데이터가 없을 때 사용자에게 알림
-      selectedProperty.value = {
-        buildingName: `매물 ID: ${buildingId}`,
-        address: '주소 정보 없음',
-        saleType: '정보 없음',
-        propertyType: '정보 없음',
-        price: 0,
-        deposit: 0,
-        isBookmarked: false,
-        isNotification: false,
-        error: '공공데이터 통합 API에서 매물 정보를 찾을 수 없습니다.',
-      }
-      showDetail.value = true
+      throw new Error(result.error || 'Codef API에서 데이터를 가져오지 못했습니다.')
     }
   } catch (error) {
-    console.error('공공데이터 통합 조회 실패:', error)
+    console.error('codef API 통합 조회 실패:', error)
 
-    // API 호출 실패 시 기본 API로 대체
-    console.log('공공데이터 통합 API 실패, 기본 API로 대체')
-    await fetchPropertyDetail(buildingId)
+    selectedProperty.value = {
+      buildingName: `매물 ID: ${buildingId}`,
+      address: '주소 정보 없음',
+      error: `API 호출 실패: ${error.message}`,
+    }
+    showDetail.value = true
   }
 }
 
@@ -889,7 +697,7 @@ const goToRegistryDownload = async () => {
       // 멤버십 검증
       const result = await validateMembership({
         onSuccess: () => {
-          router.push(`/deal/consumer/documents/${buildingId}/registry/download`)
+          router.push(`/deal/consumer/documents/${buildingId}/ESTATE/download`)
         },
         onFailure: (message) => {
           console.warn('멤버십 검증 실패:', message)
@@ -912,7 +720,7 @@ const goToBuildingRegisterDownload = async () => {
       // 멤버십 검증
       const result = await validateMembership({
         onSuccess: () => {
-          router.push(`/deal/consumer/documents/${buildingId}/building-register/download`)
+          router.push(`/deal/consumer/documents/${buildingId}/BUILDING_REGISTER/download`)
         },
         onFailure: (message) => {
           console.warn('멤버십 검증 실패:', message)
@@ -951,7 +759,8 @@ const goToAnalysisReportDownload = async () => {
 watch(
   () => mapStore.filteredProperties,
   (newProperties) => {
-    displayMarkers(newProperties)
+    // 필터링된 주소 목록으로 마커 다시 표시
+    displayMarkersFromAddresses(newProperties)
   },
   { deep: true }
 )
@@ -2753,5 +2562,21 @@ onMounted(() => {
   font-size: 16px;
   font-weight: bold;
   margin-bottom: 8px;
+}
+
+/* 가격 변화 스타일 */
+.price-increase {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+.price-decrease {
+  color: #27ae60;
+  font-weight: bold;
+}
+
+.price-neutral {
+  color: #7f8c8d;
+  font-weight: bold;
 }
 </style>

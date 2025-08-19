@@ -28,7 +28,8 @@
           </div>
           <div class="flex items-center gap-2">
             <h1 class="text-xl font-semibold">알림</h1>
-            <span class="text-sm text-gray-500">총 {{ store.totalElements }}개</span>
+            <!-- <span class="text-sm text-gray-500">총 {{ store.totalElements }}개</span> -->
+            <span class="text-sm text-gray-500">총 {{ store.totalCounts.ALL }}개</span>
           </div>
         </div>
       </div>
@@ -64,6 +65,7 @@
 
 <script setup>
 import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import NotificationFilter from '@/components/notification/NotificationFilter.vue'
 import NotificationList from '@/components/notification/NotificationList.vue'
 import NotificationEmpty from '@/components/notification/NotificationEmpty.vue'
@@ -73,10 +75,20 @@ import { useNotificationStore } from '@/stores/notification/notification'
 import { listenForegroundMessage, requestFcmToken } from '@/utils/fcm'
 
 const store = useNotificationStore()
+const router = useRouter()
 
 onMounted(async () => {
   // 1) 백엔드에서 1페이지 로드
   await store.loadNotifications()
+
+  console.table(
+    (store.notifications ?? []).slice(0, 5).map((n) => ({
+      id: n.id,
+      type: n.type,
+      buildingId: n.buildingId,
+      url: n.url,
+    }))
+  )
 
   // 2) (선택) FCM 토큰 발급
   try {
@@ -102,18 +114,36 @@ function handleNotificationAction({ type, id }) {
   else if (type === 'delete') store.deleteNotification(id)
 }
 
-/**
- * 알림 클릭 시 타입별로 라우팅
- */
-const openNotification = (n) => {
-  if (n.type === 'REVIEW') {
-    router.push(`/review/${n.id}`)
-  } else if (n.type === 'TRADE') {
-    router.push(`/building/${n.id}`)
-  } else if (n.type === 'BUILDING') {
-    router.push(`/building/${n.id}`)
-  } else {
-    console.warn('Unknown notification type:', n.type)
+const isHttp = (s) => typeof s === 'string' && /^https?:\/\//i.test(s)
+const getBid = (n) => n?.buildingId ?? n?.building_id // 서버/클라 표기 차이 폴백
+
+const openNotification = async (n) => {
+  // 낙관적 읽음 처리
+  const prev = n.isRead
+  n.isRead = true
+  try {
+    await store.markNotificationAsRead(n.id)
+  } catch {
+    n.isRead = prev
+  }
+
+  // 백에서 url 내려줬으면 최우선
+  if (n?.url) {
+    return isHttp(n.url)
+      ? window.location.assign(n.url)
+      : router.push(n.url.startsWith('/') ? n.url : `/${n.url}`)
+  }
+
+  const bid = getBid(n) ?? n.id
+  switch ((n?.type || '').toUpperCase()) {
+    case 'REVIEW':
+      return router.push(`/review/${bid}`)
+    case 'BUILDING':
+      return router.push(`/map/apt/${bid}`)
+    case 'TRADE':
+      return router.push(`/map/apt/${bid}`)
+    default:
+      return router.push('/notification')
   }
 }
 </script>

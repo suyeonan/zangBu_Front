@@ -31,6 +31,12 @@ export async function getNotificationsApi({ page = 1, size = 10, type = 'ALL' } 
     tradeId: n.tradeId ?? null,
   }))
 
+  // ... items 매핑한 바로 다음 줄에 추가
+  console.log(
+    '[notification] buildingIds',
+    items.map((x) => ({ id: x.id, type: x.type, buildingId: x.buildingId }))
+  )
+
   return {
     items,
     pageNumber: Number(data?.pageNum) || params.page,

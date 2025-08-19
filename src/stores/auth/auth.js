@@ -34,6 +34,13 @@ export const useAuthStore = defineStore('auth', () => {
       // accessToken만 저장, refresh는 저장 안 함
       setTokens({ accessToken: at }, { persistRefresh: false })
 
+      // [FCM] 로그인 성공 직후: FCM 토큰 등록 (실패해도 로그인 흐름 유지)
+      try {
+        await FcmOnLogin()
+      } catch {
+              /* noop */
+      }
+
       // 혹시 예전 구조로 남아있을 로컬 refreshToken 제거
       localStorage.removeItem('refreshToken')
 
@@ -71,7 +78,14 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('isLoggedIn', 'true')
   }
 
-  function logout() {
+  async function logout() {
+        // [FCM] 로그아웃 직전: 서버에 현재 기기 토큰 삭제 요청 (Authorization 필요할 수 있으므로 먼저 완료)
+    try {
+      await FcmOnLogout()
+    } catch {
+      /* noop */
+    }
+
     user.value = null
     accessToken.value = null
     refreshToken.value = null

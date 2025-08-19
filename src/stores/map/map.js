@@ -38,11 +38,11 @@ export const useMapStore = defineStore('map', () => {
   const mapLevel = ref(8)
 
   // 액션
-  const fetchProperties = async (propertyList) => {
+  const fetchProperties = async () => {
     try {
       error.value = null
 
-      const response = await getMapList(propertyList)
+      const response = await getMapList();
       properties.value = response
       filteredProperties.value = response
 
@@ -70,36 +70,31 @@ export const useMapStore = defineStore('map', () => {
   // 필터링된 매물 조회 (새로운 API 사용)
   const fetchFilteredProperties = async () => {
     try {
+      loading.value = true
       error.value = null
 
-      // 필터 조건 구성
+      // UI 필터 상태를 API 요청 형식으로 변환
+      const propertyTypes = Object.entries(filters.propertyTypes)
+        .filter(([, checked]) => checked)
+        .map(([type]) => type.toUpperCase()) // 대문자로 변환
+
+      const saleTypes = Object.entries(filters.transactionTypes)
+        .filter(([, checked]) => checked)
+        .map(([type]) => { // 프론트엔드 값 -> 백엔드 ENUM 값
+          if (type === 'sale') return 'TRADING'
+          if (type === 'lease') return 'CHARTER'
+          if (type === 'rent') return 'MONTHLY'
+          return type.toUpperCase()
+        })
+
       const filterRequest = {
-        saleTypes: [],
-        propertyTypes: [],
-        priceMin: null,
-        priceMax: null
+        propertyTypes,
+        saleTypes,
+        priceMin: filters.priceRange.min,
+        priceMax: filters.priceRange.max,
       }
 
-      // 거래 유형 필터
-      if (filters.transactionTypes.sale) filterRequest.saleTypes.push('매매')
-      if (filters.transactionTypes.lease) filterRequest.saleTypes.push('전세')
-      if (filters.transactionTypes.rent) filterRequest.saleTypes.push('월세')
-
-      // 매물 유형 필터
-      if (filters.propertyTypes.apartment) filterRequest.propertyTypes.push('아파트')
-      if (filters.propertyTypes.officetel) filterRequest.propertyTypes.push('오피스텔')
-      if (filters.propertyTypes.house) filterRequest.propertyTypes.push('주택')
-      if (filters.propertyTypes.villa) filterRequest.propertyTypes.push('빌라')
-
-      // 가격 범위 필터 (억 단위를 원 단위로 변환)
-      if (filters.priceRange.min > 0) {
-        filterRequest.priceMin = filters.priceRange.min * 100000000 // 억 → 원
-      }
-      if (filters.priceRange.max < 50) {
-        filterRequest.priceMax = filters.priceRange.max * 100000000 // 억 → 원
-      }
-
-      console.log('필터링 요청:', filterRequest)
+      console.log('필터링 API 요청:', filterRequest)
 
       const response = await getFilteredMapList(filterRequest)
       filteredProperties.value = response
@@ -109,6 +104,8 @@ export const useMapStore = defineStore('map', () => {
       error.value = err.message || '필터링된 매물을 불러오는데 실패했습니다.'
       console.error('필터링된 매물 로드 실패:', err)
       throw err
+    } finally {
+      loading.value = false
     }
   }
 
