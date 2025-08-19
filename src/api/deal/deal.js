@@ -1,3 +1,4 @@
+import { useAuthStore } from '@/stores/auth/auth'
 import api from '../axios'
 
 // 백엔드 서버 연결 상태 확인
@@ -21,11 +22,23 @@ export const getDeals = () => {
 
 // 거래 상태 변경 (새로운 엔드포인트)
 export const changeDealStatus = (dealData) => {
-  return api.patch('/deal/status', {
-    chatRoomId: dealData.chatRoomId,
-    dealId: dealData.dealId,
-    status: dealData.status,
-  })
+  const authStore = useAuthStore()
+  const token = authStore?.accessToken
+
+  return api.patch(
+    '/deal/status',
+    {
+      chatRoomId: dealData.chatRoomId,
+      dealId: dealData.dealId,
+      status: dealData.status,
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    }
+  )
 }
 
 // 거래 가이드 조회

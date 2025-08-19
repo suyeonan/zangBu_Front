@@ -478,61 +478,61 @@ const startDeal = () => {
   router.push(`/deal/seller/${dealNotice.value.building_id}`)
 }
 
-const isStarting = ref(false)
-const startChat = async () => {
-  if (!isAgreed.value) {
-    showAgreementModal.value = true
-    return
-  }
-  if (isStarting.value) return (isStarting.value = true)
-  var chatRoomId = null
-  try {
-    const chatRoom = await chatStore.createChatRoom(route.params.buildingId)
-    if (!chatRoom || !chatRoom.chatRoomId) {
-      throw new Error('채팅방을 찾을 수 없습니다.')
-    }
-    chatRoomId = chatRoom.chatRoomId
-    const dealId = await createDeal(chatRoomId)
-    // 채팅방 생성 후 채팅방으로 이동
-    router.push({ name: 'chat-room', params: { roomId: chatRoom.chatRoomId } })
-  } catch (err) {
-    console.error('채팅방/거래 생성 실패:', err)
-    if (chatRoomId) {
-      try {
-        await chatStore.deleteChatRoom(chatRoomId)
-      } catch (cleanupErr) {
-        console.warn('채팅방 정리 실패(무시 가능):', cleanupErr)
-      }
-    }
-    alert('생성 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.')
-  } finally {
-    isStarting.value = false
-  }
-}
+// const isStarting = ref(false)
+// const startChat = async () => {
+//   if (!isAgreed.value) {
+//     showAgreementModal.value = true
+//     return
+//   }
+//   if (isStarting.value) return (isStarting.value = true)
+//   var chatRoomId = null
+//   try {
+//     const chatRoom = await chatStore.createChatRoom(route.params.buildingId)
+//     if (!chatRoom || !chatRoom.chatRoomId) {
+//       throw new Error('채팅방을 찾을 수 없습니다.')
+//     }
+//     chatRoomId = chatRoom.chatRoomId
+//     const dealId = await createDeal(chatRoomId)
+//     // 채팅방 생성 후 채팅방으로 이동
+//     router.push({ name: 'chat-room', params: { roomId: chatRoom.chatRoomId } })
+//   } catch (err) {
+//     console.error('채팅방/거래 생성 실패:', err)
+//     if (chatRoomId) {
+//       try {
+//         await chatStore.deleteChatRoom(chatRoomId)
+//       } catch (cleanupErr) {
+//         console.warn('채팅방 정리 실패(무시 가능):', cleanupErr)
+//       }
+//     }
+//     alert('생성 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.')
+//   } finally {
+//     isStarting.value = false
+//   }
+// }
 
-//거래 생성
-const createDeal = async (chatRoomId) => {
-  const token = authStore.accessToken || ''
-  try {
-    const res = await axios.post(
-      `/api/deal`,
-      { chatRoomId },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      }
-    )
-    return res.data //dealId 반환받음
-  } catch (err) {
-    console.error('API 응답 오류(createDeal):', {
-      status: err.response?.status,
-      data: err.response?.data,
-    })
-    throw err
-  }
-}
+// //거래 생성
+// const createDeal = async (chatRoomId) => {
+//   const token = authStore.accessToken || ''
+//   try {
+//     const res = await axios.post(
+//       `/api/deal`,
+//       { chatRoomId },
+//       {
+//         headers: {
+//           'Content-Type': 'application/json',
+//           ...(token ? { Authorization: `Bearer ${token}` } : {}),
+//         },
+//       }
+//     )
+//     return res.data //dealId 반환받음
+//   } catch (err) {
+//     console.error('API 응답 오류(createDeal):', {
+//       status: err.response?.status,
+//       data: err.response?.data,
+//     })
+//     throw err
+//   }
+// }
 
 const handleBackClick = () => {
   showBackModal.value = true

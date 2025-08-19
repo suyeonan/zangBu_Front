@@ -587,7 +587,7 @@ const confirmAccept = async () => {
 
   try {
     const dto = {
-      dealId,
+      dealId: dealId,
       chatRoomId: roomId,
       status: DEAL_STATUS.BEFORE_CONSUMER,
     } // 판매자 수락 - 소비자 확인 대기 상태로 변경
@@ -643,7 +643,36 @@ const closeAgreementModal = () => {
   showAgreementModal.value = false
 }
 
+// 진입 시 BEFORE_OWNER로 전환
+async function ensureBeforeOwnerOnEnter() {
+  const dealId = Number(route.params.dealId)
+  const chatRoomId = String(route.query.chatRoomId || '')
+
+  if (!dealId || !chatRoomId) {
+    console.warn('[ensureBeforeOwnerOnEnter] dealId/chatRoomId 누락', { dealId, chatRoomId })
+    return
+  }
+
+  try {
+    await changeDealStatus({
+      dealId,
+      chatRoomId,
+      status: DEAL_STATUS.BEFORE_OWNER, // 판매자 진입 시 상태: 판매자 수락 대기
+    })
+    console.log('[ensureBeforeOwnerOnEnter] 상태를 BEFORE_OWNER로 변경 완료')
+  } catch (err) {
+    // 이미 BEFORE_OWNER 이거나 전이 불가 규칙이면 백엔드에서 4xx 반환 가능
+    console.error(
+      '[ensureBeforeOwnerOnEnter] 상태 변경 실패:',
+      err?.response?.status,
+      err?.response?.data || err?.message || err
+    )
+    // 사용자 경험상 여기서 알림은 생략(확정 흐름 방해 X). 필요하면 토스트로 안내해도 됨.
+  }
+}
+
 onMounted(() => {
+  ensureBeforeOwnerOnEnter()
   fetchPropertyInfo()
 })
 </script>

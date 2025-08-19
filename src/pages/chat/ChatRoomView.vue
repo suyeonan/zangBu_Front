@@ -24,19 +24,33 @@
         </div>
         <!-- 우측 영역 (판매자, 구매자에 따라 다르게) -->
         <div class="flex items-center gap-5">
-          <!-- 판매자인 경우 거래 활성화 토글 -->
+          <!-- 판매자인 경우 -->
           <template v-if="isSeller">
-            <!-- 거래 완료면 토글 대신 배지 -->
-            <span
-              v-if="statusRaw === 'CLOSE_DEAL'"
-              class="text-xs font-medium px-2 py-1 rounded bg-gray-100 text-gray-500"
-            >
-              거래 완료
-            </span>
+            <!-- BEFORE_CONSUMER: 구매자 수락 전 배지 -->
+            <template v-if="statusRaw === 'BEFORE_CONSUMER'">
+              <span class="text-xs font-medium px-2 py-1 rounded bg-blue-100 text-blue-600">
+                구매자 수락 전
+              </span>
+            </template>
+
+            <!-- MIDDLE_DEAL, CLOSE_DEAL: 거래 중/완료 배지 -->
+            <template v-else-if="['MIDDLE_DEAL', 'CLOSE_DEAL'].includes(statusRaw)">
+              <span
+                class="text-xs font-medium px-2 py-1 rounded"
+                :class="{
+                  'bg-yellow-100 text-yellow-600': status === '거래 중',
+                  'bg-gray-100 text-gray-500': status === '거래 완료',
+                }"
+              >
+                {{ status }}
+              </span>
+            </template>
+
+            <!-- BEFORE_OWNER, BEFORE_TRANSACTION: 거래 활성화 토글 -->
             <div v-else class="flex flex-col items-center text-sm">
               <span class="mb-1">거래 활성화</span>
               <label
-                class="relative inline-flex items-center cursor-pointer"
+                class="relative inline-flex items-center"
                 :class="
                   isActive ? 'cursor-not-allowed pointer-events-none opacity-60' : 'cursor-pointer'
                 "
@@ -57,7 +71,8 @@
               </label>
             </div>
           </template>
-          <!-- 구매자인 경우 거래 상태 -->
+
+          <!-- 구매자인 경우(기존 그대로) -->
           <div v-else>
             <router-link
               v-if="status === '거래 시작하러 가기'"
@@ -72,6 +87,7 @@
               :class="{
                 'bg-gray-100 text-gray-600': status === '거래 전',
                 'bg-blue-100 text-gray-600': status === '판매자 수락 전',
+                'bg-blue-100 text-gray-600': status === '구매자 수락 전',
                 'bg-blue-100 text-blue-600': status === '거래 시작하러 가기',
                 'bg-yellow-100 text-yellow-600': status === '거래 중',
                 'bg-gray-100 text-gray-500': status === '거래 완료',
@@ -80,7 +96,8 @@
               {{ status }}
             </span>
           </div>
-          <!-- 나가기 버튼 -->
+
+          <!-- 나가기 버튼-->
           <Button
             variant="button9"
             class="px-2 py-1 text-xs h-auto"
@@ -209,16 +226,18 @@ function mapSellerType(raw) {
   return raw || ''
 }
 
-function mapDealStatus(raw) {
+function mapDealStatus(raw, isSeller = false) {
   if (!raw) return '거래 전'
   const v = String(raw).toUpperCase()
-  if (['BEFORE_TRANSACTION'].includes(v)) return '거래 전'
-  if (['BEFORE_OWNER'].includes(v)) return '판매자 수락 전'
-  if (['BEFORE_CONSUMER'].includes(v)) return '거래 시작하러 가기'
-  if (['MIDDLE_DEAL'].includes(v)) return '거래 중'
-  if (['CLOSE_DEAL'].includes(v)) return '거래 완료'
-
-  return String(raw) // 그대로 표시
+  if (v === 'BEFORE_TRANSACTION') return '거래 전'
+  if (v === 'BEFORE_OWNER') return '판매자 수락 전'
+  if (v === 'BEFORE_CONSUMER') {
+    // 판매자는 "구매자 수락 전", 구매자는 "거래 시작하러 가기"
+    return isSeller ? '구매자 수락 전' : '거래 시작하러 가기'
+  }
+  if (v === 'MIDDLE_DEAL') return '거래 중'
+  if (v === 'CLOSE_DEAL') return '거래 완료'
+  return raw
 }
 
 async function fetchRoomMeta() {
@@ -244,7 +263,7 @@ async function fetchRoomMeta() {
     // 거래 활성화 토글 관련
     const raw = String(r.status ?? '').toUpperCase()
     statusRaw.value = raw
-    status.value = mapDealStatus(raw)
+    status.value = mapDealStatus(raw, isSeller.value)
 
     // 거래 활성화 초기 상태(요구사항대로)
     isActive.value = ['BEFORE_CONSUMER', 'MIDDLE_DEAL'].includes(statusRaw.value)

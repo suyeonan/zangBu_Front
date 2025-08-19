@@ -35,6 +35,7 @@ import { getAptTrades } from '@/api/publicdata/publicdata.js'
 import { useMembership } from '@/composables/useMembership'
 import { useChatStore } from '@/stores/chat/chat'
 import { useAuthStore } from '@/stores/auth/auth'
+import axios from 'axios'
 
 // Props 정의
 const props = defineProps({
@@ -778,12 +779,76 @@ const goToChat = async () => {
   const consumerId = await chatStore.fetchMemberIdByEmail(user.value.email)
   const { exists, chatRoomId } = await chatStore.existChatRoom(props.buildingId, consumerId)
 
-  //채팅방 존재하면 해당 채팅방으로 이동, 존재하지 않으면 거래 안내페이지로 이동
+  //채팅방 있으면 채팅방으로 바로 이동
   if (exists && chatRoomId) {
+    console.log('채팅방이 이미 존재합니다:', chatRoomId)
     router.push({ name: 'chat-room', params: { roomId: chatRoomId } })
-  } else {
-    router.push({ name: 'deal-notice', params: { buildingId: props.buildingId } })
+    return
   }
+
+  //채팅방 생성, 거래 생성
+
+  const isStarting = ref(false)
+  const token = authStore.accessToken || ''
+  async function createDeal(chatRoomId) {
+    try {
+      const res = await axios.post(
+        `/api/deal`,
+        { chatRoomId },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        }
+      )
+      return res.data // dealId
+    } catch (err) {
+      console.error('API 응답 오류(createDeal):', {
+        status: err.response?.status,
+        data: err.response?.data,
+      })
+      throw err
+    }
+  }
+
+  // 2) 채팅 시작 함수
+  const startChat = async () => {
+    if (isStarting.value) return
+    isStarting.value = true
+
+    let newChatRoomId = null
+    try {
+      // 여기에서 route.params가 아니라 props.buildingId 사용
+      const chatRoom = await chatStore.createChatRoom(props.buildingId)
+      if (!chatRoom || !chatRoom.chatRoomId) {
+        throw new Error('채팅방을 찾을 수 없습니다.')
+      }
+      newChatRoomId = chatRoom.chatRoomId
+
+      // 거래 생성
+      const dealId = await createDeal(newChatRoomId)
+      console.log('거래 생성 완료:', dealId)
+
+      // 채팅방으로 이동
+      router.push({ name: 'chat-room', params: { roomId: newChatRoomId } })
+    } catch (err) {
+      console.error('채팅방/거래 생성 실패:', err)
+      if (newChatRoomId) {
+        try {
+          await chatStore.deleteChatRoom(newChatRoomId)
+        } catch (cleanupErr) {
+          console.warn('채팅방 정리 실패(무시 가능):', cleanupErr)
+        }
+      }
+      alert('생성 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.')
+    } finally {
+      isStarting.value = false
+    }
+  }
+
+  // 3) 호출
+  await startChat()
 }
 
 // 리뷰 목록 페이지로 이동
