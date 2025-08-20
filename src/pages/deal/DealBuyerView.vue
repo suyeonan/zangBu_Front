@@ -178,8 +178,8 @@ const acceptDeal = async () => {
       return
     }
 
-    const roomId = propertyInfo.value.chatRoomId
-    const dealId = propertyInfo.value.dealId
+    const roomId = route.query.chatRoomId
+    const dealId = route.params.dealId
 
     if (!roomId) {
       alert('chatRoomId가 없습니다.')

@@ -3,7 +3,7 @@ import JSEncrypt from 'jsencrypt'
 // 공개키는 백엔드에서 내려주는 걸 세션에 저장해두거나
 // 환경변수에 넣어둘 수도 있음
 const PUBLIC_KEY =
-  'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAysdIHNsqu3omk2Hh7fPCsPoimxl2AAWNOVEo3Xln4bLNixI4b99/T/sP3f+fBcjXnTnzzD+Pk3t+Q2V5Xj4LYTz1Mj0ubsteg2NHN1qkPrNmpo+A6L08m2hpZ+RZ8mdnyx7UgAJHQowEgbUeZ8x7Gvkc2qFEuJDMMaD4GVbhvhn0fzYxX22PtPEevB4m0G+aVW+u5Od9x8h/tNnIfY5vCQ/+2I/yB9b0ulC2t6gQp6fIqXQ3X1NmD3/beVJiIvOAMCE/x1XJ2t6Nq2um7IwO7k0eIUpw8jr9n5rougUBhuLy64gerEgbfyG0wnXzQsu3Sm16073fJpuYB8t6tG0AvQIDAQAB'
+  'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiu/GZTW7SfMb/CAUp96uEwrtOizmCLOVK19aaS2hJ17hGFd1/B58b6yL2F49QOFbHN8tmjB+i46a542oWF1Ar7gqQ2aTDA7N97N07zVdC9H7n/tp3jjl1qkDUTl2frlQtij/ImugUIeLuy6JQbFQO1EIIOJuEJeGUniDPcGqOAyHAFbkghAfa9gY2CdRivF0pugWVJjCmFzelsWjZ18SFj4CxQ+4T1qbdUOjagyorZf658H62/0dHV1dPybIba1SGpSHrKUfAXnLUkkYCXyfBs+c7TU5powoN9nlge3YxPF2Mfi6mo4hnq+mC/qDXq4p0m7Do9fQDtuSqduC9KUhkwIDAQAB'
 export function encryptRsa(text) {
   const encryptor = new JSEncrypt()
   encryptor.setPublicKey(PUBLIC_KEY)
