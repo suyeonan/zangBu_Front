@@ -14,6 +14,7 @@ const propertyInfo = ref({})
 const loading = ref(true)
 const error = ref(null)
 const showCancelModal = ref(false)
+const showAnalysisReportLoading = ref(false)
 const checklistItems = ref({
   precautions: false,
   specialTerms: false,
@@ -87,7 +88,7 @@ const viewDocument = async (type) => {
       .push({
         name: 'deal-consumer-document',
         params: {
-          dealId: propertyInfo.value.buildingId, // buildingId 사용
+          buildingId: propertyInfo.value.buildingId, // buildingId 사용
           type: type,
         },
       })
@@ -106,11 +107,25 @@ const viewDocument = async (type) => {
 
 const viewAnalysisReport = () => {
   console.log('법무 서류 분석 리포트 열람')
-  // 유료 서비스이므로 결제 페이지로 이동
-  router.push('/payment').then(() => {
-    // 페이지 이동 후 스크롤을 맨 위로 초기화
-    window.scrollTo(0, 0)
-  })
+
+  // 로딩 상태 표시
+  showAnalysisReportLoading.value = true
+
+  // 10초 후에 페이지 이동
+  setTimeout(() => {
+    showAnalysisReportLoading.value = false
+    router
+      .push({
+        name: 'analysis-report',
+        params: {
+          reportId: '1', // 기본값으로 1 사용
+        },
+      })
+      .then(() => {
+        // 페이지 이동 후 스크롤을 맨 위로 초기화
+        window.scrollTo(0, 0)
+      })
+  }, 10000) // 10초 (10000ms)
 }
 
 // 체크리스트 완료 여부 확인
@@ -130,9 +145,9 @@ const isAcceptButtonDisabled = computed(() => {
 // 계약 진행 함수들
 const downloadContract = async () => {
   try {
-    const dealId = propertyInfo.value.dealId
+    const buildingId = propertyInfo.value.buildingId
 
-    const response = await downloadStandardContract(dealId)
+    const response = await downloadStandardContract(buildingId)
 
     // API 응답에서 URL 추출
     const downloadUrl = response.data.url
@@ -144,7 +159,7 @@ const downloadContract = async () => {
     // URL을 사용하여 파일 다운로드
     const link = document.createElement('a')
     link.href = downloadUrl
-    link.download = `표준계약서_${dealId}.pdf`
+    link.download = `표준계약서_${buildingId}.pdf`
     link.target = '_blank'
     document.body.appendChild(link)
     link.click()
@@ -163,7 +178,7 @@ const downloadContract = async () => {
 //   }
 //   console.log('거래 시작')
 //   // 채팅 페이지로 이동
-//   router.push(`/chat/room?dealId=${propertyInfo.value.dealId}`).then(() => {
+//   router.push(`/chat/room?dealId=${propertyInfo.value.buildingId}`).then(() => {
 //     // 페이지 이동 후 스크롤을 맨 위로 초기화
 //     window.scrollTo(0, 0)
 //   })
@@ -751,6 +766,46 @@ onMounted(() => {
               거래 취소
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 분석 리포트 로딩 모달 -->
+    <div
+      v-if="showAnalysisReportLoading"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+    >
+      <div class="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl">
+        <div class="text-center">
+          <div
+            class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 mb-6"
+          >
+            <svg
+              class="h-8 w-8 text-blue-600 animate-spin"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              ></path>
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold mb-4" style="color: var(--text-2)">분석 리포트 준비 중</h3>
+          <p class="text-sm mb-6" style="color: var(--text-1)">
+            법무 서류 분석 리포트를 생성하고 있습니다.<br />
+            잠시만 기다려주세요...
+          </p>
+          <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+            <div
+              class="bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-linear"
+              :style="{ width: '100%' }"
+            ></div>
+          </div>
+          <p class="text-xs text-gray-500">약 10초 소요됩니다</p>
         </div>
       </div>
     </div>
